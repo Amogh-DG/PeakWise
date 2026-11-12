@@ -16,7 +16,22 @@ For a fresh AI session: read the README Progress log, then docs/.
 
 ## How to run the UI
 
-TODO (B)
+1. Install dependencies:
+   ```bash
+   cd ui && npm install
+   ```
+2. Start the Vite development server:
+   ```bash
+   npm run dev
+   # or from repo root:
+   make ui
+   ```
+   Open `http://localhost:5173` in your browser.
+3. Configure backend API URL via `VITE_API_BASE` (defaults to `http://localhost:8000/api/v1`).
+4. Build for production:
+   ```bash
+   npm run build
+   ```
 
 ## Results
 
@@ -50,4 +65,9 @@ TODO (B)
 ### B
 
 <!-- B-PROGRESS-START -->
+- B-1: UI shell scaffolded with Vite 5 + React 18 + TypeScript strict + Tailwind 3, 6-page routing (/forecast, /accuracy, /errors, /missed-peaks, /procurement, /insights), colour-blind-safe theme tokens, typed API client for contract §2, shared components (ChartCard, ModelSelect, DatePicker, StatTile, PlotlyChart), mock mode banner, multi-stage Dockerfile and nginx SPA config.
+- B-2: Built FastAPI backend (api/main.py, api/models.py, api/store.py, api/errors.py, api/routers/) implementing contract endpoints §2.1–§2.16 on mock artifacts with MOCK=1. Added procurement advisor stub in src/procurement/advisor.py and full contract test suite (tests/test_contract.py). Run backend on mocks with `MOCK=1 make api` or `MOCK=1 python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload`.
+- B-3: Error decomposition and heatmap artifact — src/analysis/error_decomposition.py computes mape/rmse/bias by season×hour, peak/off-peak, and horizon_day per model; writes artifacts_dir()/error_heatmap.json per contract §1.8; make/b.mk analysis target wired; tests/test_analysis_heatmap.py covers shape, season order, min-obs null, and hand-computed mape example.
+- B-4: Missed-peak analysis — src/analysis/missed_peaks.py extracts all misses per model, generates deterministic diagnostic tags (festival, holiday, heatwave, weather_miss, weekend, other) and data-grounded post-mortem notes; writes artifacts_dir()/missed_peaks.json per contract §1.9; tests/test_analysis_missed_peaks.py verifies sorting, tags, and notes.
+- B-5: Forecast page (ui/src/pages/Forecast) — implemented Day-ahead / Week-ahead (168h) probabilistic load forecast visualizations with P10–P90 (80%) and P05–P95 (90%) uncertainty bands, actual demand curve, predicted (diamond) & actual (circle) peak markers, peak threshold reference line, and shaded at-risk hours; integrated beside an interactive Peak Card displaying probability, predicted/actual peak MW and timing, outcome badges, and timing/magnitude errors; deep-linkable URL search params (?date, ?model, ?view); friendly DATE_OUT_OF_RANGE error recovery.
 <!-- B-PROGRESS-END -->
