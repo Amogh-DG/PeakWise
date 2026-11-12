@@ -1,0 +1,10 @@
+event,start_date,end_date,source_url,notes
+covid_lockdown_phase_1,2020-03-25,2020-04-14,https://www.mha.gov.in/,National COVID-19 lockdown phase 1
+covid_lockdown_phase_2,2020-04-15,2020-05-03,https://www.mha.gov.in/,National COVID-19 lockdown phase 2
+covid_lockdown_phase_3,2020-05-04,2020-05-17,https://www.mha.gov.in/,National COVID-19 lockdown phase 3
+covid_lockdown_phase_4,2020-05-18,2020-05-31,https://www.mha.gov.in/,National COVID-19 lockdown phase 4
+covid_lockdown_delhi_wave2,2021-04-19,2021-05-31,https://delhi.gov.in/,Delhi state COVID-19 second wave lockdown
+delhi_odd_even_phase_1,2016-01-01,2016-01-15,https://delhi.gov.in/,Delhi odd-even vehicle rationing phase 1
+delhi_odd_even_phase_2,2016-04-15,2016-04-30,https://delhi.gov.in/,Delhi odd-even vehicle rationing phase 2
+delhi_odd_even_phase_3,2019-11-04,2019-11-15,https://delhi.gov.in/,Delhi odd-even vehicle rationing phase 3
+delhi_odd_even_2023_proposed,2023-11-13,2023-11-20,https://www.autocarindia.com/car-news/delhi-odd-even-scheme-deferred-429789,Announced by Delhi govt under GRAP-4 but deferred on 2023-11-10 following rain and Supreme Court scrutiny
