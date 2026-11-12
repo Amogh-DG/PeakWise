@@ -104,6 +104,7 @@ def get_features_path() -> Path:
 @register("lgbm")
 class LGBMQuantileForecaster:
     name: str = "lgbm"
+    calibrate: bool = True
 
     def __init__(self, cfg: dict):
         self.cfg = cfg

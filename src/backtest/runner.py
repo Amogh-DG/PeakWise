@@ -8,6 +8,7 @@ from src.backtest.registry import REGISTRY, get_forecaster
 import src.backtest.persistence
 import src.models
 from src.common import config, paths
+from src.models.calibration import calibrate, generate_calibration_predictions
 
 
 def get_load_path() -> Path:
@@ -54,12 +55,22 @@ def run_backtest(models: list[str] | None = None, keep_persistence: bool = False
     new_dfs = []
 
     for model_name in target_models:
+        forecaster_cls = REGISTRY[model_name]
         forecaster = get_forecaster(model_name, cfg)
+        should_calibrate = getattr(forecaster_cls, "calibrate", False) or getattr(forecaster, "calibrate", False)
+
         for fold in tqdm(folds, desc=f"Backtest {model_name}"):
             if (model_name, fold.fold_id) in existing_pairs:
                 continue
 
+            calib_df = pd.DataFrame()
+            if should_calibrate:
+                calib_df = generate_calibration_predictions(
+                    forecaster_cls, cfg, fold.origins[0], load_df
+                )
+
             forecaster.fit(fold.train_end)
+            fold_preds = []
             for origin in fold.origins:
                 preds = forecaster.predict(origin).copy()
                 targets = preds["target_ts"]
@@ -77,7 +88,13 @@ def run_backtest(models: list[str] | None = None, keep_persistence: bool = False
                 preds["p95_raw"] = preds["p95"].astype(float)
                 preds["is_outage_suspect"] = [bool(outage_map.get(t, False)) for t in targets]
 
-                new_dfs.append(preds)
+                fold_preds.append(preds)
+
+            if fold_preds:
+                concat_fold = pd.concat(fold_preds, ignore_index=True)
+                if should_calibrate and not calib_df.empty:
+                    concat_fold = calibrate(concat_fold, calib_df, cfg)
+                new_dfs.append(concat_fold)
 
     cols = [
         "model",
