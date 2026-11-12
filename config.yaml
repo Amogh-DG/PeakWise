@@ -1,0 +1,64 @@
+timezone: Asia/Kolkata
+origin_hour_local: 10
+quantiles:
+  - 0.05
+  - 0.1
+  - 0.5
+  - 0.9
+  - 0.95
+seed: 42
+peak_threshold_quantile: 0.9
+cdh_base_c: 24
+paths:
+  data: data
+  artifacts: artifacts
+  artifacts_mock: artifacts_mock
+  processed_mock: data/processed_mock
+backtest:
+  min_train_days: 730
+  retrain_every_days: 30
+  test_months: 12
+weather_noise:
+  enabled: true
+  base_sd_c: 0.5
+  sd_growth_per_day_c: 0.4
+cleaning:
+  linear_gap_max_hours: 3
+  hour_of_week_weeks: 4
+  outage_mad_z: 6.0
+models:
+  lgbm:
+    num_leaves: 63
+    learning_rate: 0.05
+    n_estimators: 500
+    early_stopping_rounds: 50
+    origin_stride: 2
+  xgboost:
+    num_leaves: 63
+    learning_rate: 0.05
+    n_estimators: 500
+    early_stopping_rounds: 50
+    origin_stride: 2
+  prophet:
+    origin_stride: 7
+  lstm:
+    epochs: 30
+    hidden: 64
+    max_minutes: 10
+    retrain_every_n_folds: 3
+calibration:
+  window_days: 90
+  coverage_80: 0.8
+  coverage_90: 0.9
+peak:
+  threshold_scope: global
+  season_relative: false
+  min_recall: 0.8
+procurement:
+  da: 5000
+  under: 12000
+  resale: 2500
+api:
+  cors_origins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
