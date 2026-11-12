@@ -15,8 +15,6 @@ B: API, peak classifier, procurement, analysis, whole UI, deploy, docs.
 
 Each prompt names the files to write, the functions to expose and the contract sections to follow. Don't skip numbers; later prompts assume earlier ones are merged. "Needs" lists what must already be merged before you paste a prompt.
 
-Ignore file: the agents are told nothing about version control. Create the repo-root ignore file yourself with these entries: data/raw/, data/processed/, models/, artifacts/ (see note), __pycache__/, node_modules/, .venv/, ui/dist/, .pytest_cache/, .ruff_cache/. Do NOT ignore artifacts_mock/ or data/processed_mock/ (they are committed). For artifacts/: ignore it while developing, and remove that entry when B-15 says the real artifacts are final, so the deploy has them.
-
 ## 2. Ownership and merge rules
 
 Roles: A and B. Everything below is exact so the two halves merge without edits.

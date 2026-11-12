@@ -115,7 +115,51 @@ def build_accuracy_table(pred_df: pd.DataFrame, exclude_outage: bool = False) ->
                 rows.append(row)
 
     ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30))).isoformat()
-    return {"generated_at": ist_now, "rows": rows}
+    calib_comparison = []
+    has_raw = all(c in df.columns for c in ["p05_raw", "p10_raw", "p90_raw", "p95_raw"])
+    if has_raw:
+        for m in models:
+            m_df = df[df["model"] == m]
+            is_calibrated = (
+                not (m_df["p10"] == m_df["p10_raw"]).all()
+                or not (m_df["p90"] == m_df["p90_raw"]).all()
+                or not (m_df["p05"] == m_df["p05_raw"]).all()
+                or not (m_df["p95"] == m_df["p95_raw"]).all()
+            )
+            if not is_calibrated:
+                continue
+
+            for h in horizons:
+                h_df = m_df if h == "all" else m_df[m_df["horizon_day"] == h]
+                if h_df.empty:
+                    continue
+                y = h_df["y_true"].to_numpy()
+                p10_raw = h_df["p10_raw"].to_numpy()
+                p90_raw = h_df["p90_raw"].to_numpy()
+                p05_raw = h_df["p05_raw"].to_numpy()
+                p95_raw = h_df["p95_raw"].to_numpy()
+
+                p10_cal = h_df["p10"].to_numpy()
+                p90_cal = h_df["p90"].to_numpy()
+                p05_cal = h_df["p05"].to_numpy()
+                p95_cal = h_df["p95"].to_numpy()
+
+                calib_comparison.append({
+                    "model": m,
+                    "horizon_day": h,
+                    "picp_80_before": round(picp_80(y, p10_raw, p90_raw), 2),
+                    "picp_80_after": round(picp_80(y, p10_cal, p90_cal), 2),
+                    "picp_90_before": round(picp_90(y, p05_raw, p95_raw), 2),
+                    "picp_90_after": round(picp_90(y, p05_cal, p95_cal), 2),
+                    "mpiw_80_before": round(mpiw_80(p10_raw, p90_raw), 1),
+                    "mpiw_80_after": round(mpiw_80(p10_cal, p90_cal), 1),
+                })
+
+    return {
+        "generated_at": ist_now,
+        "rows": rows,
+        "calibration_comparison": calib_comparison,
+    }
 
 
 def print_compact_table(table_data: dict) -> None:
