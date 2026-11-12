@@ -76,5 +76,4 @@ TODO (B)
 - B-8: Missed peaks page (`ui/src/pages/MissedPeaks/`) with sortable table of missed peak events and false alarms, diagnostic tag filter chips with live counts, summary KPI strip, and drill-down drawer rendering compact day-ahead profile charts with direct navigation to the Forecast view.
 
 - B-9: Implemented procurement advisor logic (src/procurement/advisor.py) and defaults generator (src/procurement/defaults.py) replacing the B-2 stub. Computes day-ahead schedule via quantile interpolation, cost with shortfall penalties and surplus salvage under user/newsvendor quantiles, previous-week flat mean and peak baselines, p90 risk exposure, at-risk peak hours, by-day breakdowns, documented in docs/ASSUMPTIONS_B.md, and validated by tests/test_advisor.py.
->>>>>>> Stashed changes
 <!-- B-PROGRESS-END -->
