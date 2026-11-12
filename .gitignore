@@ -29,3 +29,5 @@ data/processed/
 Thumbs.db
 .idea/
 .vscode/
+
+src/models/__pycache__/

@@ -265,6 +265,7 @@ Definitions: `da_price` = price paid per MWh scheduled day-ahead; `under_price` 
 
 ### 1.13 `artifacts/daily_peak_summary.parquet` — producer A, consumer B
 
+<<<<<<< Updated upstream
 One row per `(model, origin_ts, date)`. Summary of daily forecast peaks and extremes across the 24 hourly values of each target day for peak event classification and evaluation.
 
 | Column | Type | Notes |
@@ -279,6 +280,22 @@ One row per `(model, origin_ts, date)`. Summary of daily forecast peaks and extr
 | `argmax_hour_p50` | int | hour of day (0..23) where p50 reaches its daily maximum |
 | `daily_min_p50` | float | minimum over the day's 24 hourly values of p50 |
 | `y_true_daily_max` | float \| null | maximum over the day's 24 hourly values of y_true (null if unobserved) |
+=======
+One row per (model, origin_ts, date).
+
+| Column | Type | Notes |
+|---|---|---|
+| `model` | string | model identifier |
+| `origin_ts` | datetime tz | forecast issue origin timestamp (10:00 IST) |
+| `date` | date | target calendar date |
+| `horizon_day` | int | 1..7 |
+| `daily_max_p10` | float | max of 24 hourly p10 values for the day |
+| `daily_max_p50` | float | max of 24 hourly p50 values for the day |
+| `daily_max_p90` | float | max of 24 hourly p90 values for the day |
+| `argmax_hour_p50` | int | hour of day (0..23) of the p50 maximum |
+| `daily_min_p50` | float | min of 24 hourly p50 values for the day |
+| `y_true_daily_max` | float \| null | max of 24 hourly actuals (null if unobserved) |
+>>>>>>> Stashed changes
 
 ---
 

@@ -1,7 +1,8 @@
+from datetime import date
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from src.common import paths
+from src.common import constants, paths
 
 
 def get_predictions_path() -> Path:
@@ -13,26 +14,66 @@ def get_predictions_path() -> Path:
     return p
 
 
-def build_daily_peak_summary(preds_df: pd.DataFrame) -> pd.DataFrame:
-    df = preds_df.copy()
+def build_daily_peak_summary(pred_df: pd.DataFrame | None = None) -> pd.DataFrame:
+    if pred_df is None:
+        p = get_predictions_path()
+        if not p.exists():
+            raise FileNotFoundError(f"Missing predictions file at {p}")
+        df = pd.read_parquet(p)
+    else:
+        df = pred_df.copy()
+
+    required_cols = [
+        "model",
+        "origin_ts",
+        "target_ts",
+        "horizon_day",
+        "p10",
+        "p50",
+        "p90",
+    ]
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column {col} in predictions")
+
+    df["target_ts"] = pd.to_datetime(df["target_ts"])
     df["date"] = df["target_ts"].dt.date
-    df["hour"] = df["target_ts"].dt.hour
+    df["target_hour"] = df["target_ts"].dt.hour
 
-    df_sorted = df.sort_values(["p50", "hour"], ascending=[False, True])
-    argmax_df = df_sorted.drop_duplicates(subset=["model", "origin_ts", "date"])[
-        ["model", "origin_ts", "date", "hour"]
-    ].rename(columns={"hour": "argmax_hour_p50"})
+    if "y_true" not in df.columns:
+        df["y_true"] = np.nan
 
-    agg_df = df.groupby(["model", "origin_ts", "date"], as_index=False).agg(
-        horizon_day=("horizon_day", "first"),
-        daily_max_p10=("p10", "max"),
-        daily_max_p50=("p50", "max"),
-        daily_max_p90=("p90", "max"),
-        daily_min_p50=("p50", "min"),
-        y_true_daily_max=("y_true", lambda s: s.max() if s.notna().any() else np.nan),
-    )
+    rows = []
+    grouped = df.groupby(["model", "origin_ts", "date"], sort=False)
 
-    merged = pd.merge(agg_df, argmax_df, on=["model", "origin_ts", "date"])
+    for (model, origin_ts, target_date), group in grouped:
+        h_day = int(group["horizon_day"].iloc[0])
+        max_p10 = float(group["p10"].max())
+        max_p50 = float(group["p50"].max())
+        max_p90 = float(group["p90"].max())
+        min_p50 = float(group["p50"].min())
+
+        argmax_idx = group["p50"].idxmax()
+        argmax_hour = int(group.loc[argmax_idx, "target_hour"])
+
+        valid_y = group["y_true"].dropna()
+        y_max = float(valid_y.max()) if len(valid_y) > 0 else None
+
+        rows.append(
+            {
+                "model": str(model),
+                "origin_ts": origin_ts,
+                "date": target_date,
+                "horizon_day": h_day,
+                "daily_max_p10": round(max_p10, 1),
+                "daily_max_p50": round(max_p50, 1),
+                "daily_max_p90": round(max_p90, 1),
+                "argmax_hour_p50": argmax_hour,
+                "daily_min_p50": round(min_p50, 1),
+                "y_true_daily_max": round(y_max, 1) if y_max is not None else None,
+            }
+        )
+
     cols = [
         "model",
         "origin_ts",
@@ -45,34 +86,50 @@ def build_daily_peak_summary(preds_df: pd.DataFrame) -> pd.DataFrame:
         "daily_min_p50",
         "y_true_daily_max",
     ]
-    merged = merged[cols].sort_values(["model", "origin_ts", "date"]).reset_index(drop=True)
-    merged["model"] = merged["model"].astype(str)
-    merged["horizon_day"] = merged["horizon_day"].astype(np.int32)
-    merged["argmax_hour_p50"] = merged["argmax_hour_p50"].astype(np.int32)
-    return merged
+    result_df = pd.DataFrame(rows, columns=cols)
+    if not result_df.empty:
+        result_df["model"] = result_df["model"].astype(str)
+        result_df["horizon_day"] = result_df["horizon_day"].astype(np.int32)
+        result_df["argmax_hour_p50"] = result_df["argmax_hour_p50"].astype(np.int32)
+
+    return result_df
+
+
+def save_daily_peak_summary(summary_df: pd.DataFrame) -> Path:
+    out_dir = paths.artifacts_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "daily_peak_summary.parquet"
+    summary_df.to_parquet(out_path, index=False, compression="snappy")
+
+    mock_dir = paths.repo_root() / "artifacts_mock"
+    if mock_dir.exists() and out_dir != mock_dir:
+        mock_path = mock_dir / "daily_peak_summary.parquet"
+        if not mock_path.exists():
+            summary_df.to_parquet(mock_path, index=False, compression="snappy")
+
+    return out_path
 
 
 def export_daily_peak_summary() -> pd.DataFrame:
-    preds_path = get_predictions_path()
-    if not preds_path.exists():
-        raise FileNotFoundError(f"Missing predictions at {preds_path}")
-
-    preds_df = pd.read_parquet(preds_path)
-    summary_df = build_daily_peak_summary(preds_df)
-
-    out_path = paths.artifacts_dir() / "daily_peak_summary.parquet"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_df.to_parquet(out_path, index=False, compression="snappy")
+    summary_df = build_daily_peak_summary()
+    save_daily_peak_summary(summary_df)
     return summary_df
 
 
 def main():
-    df = export_daily_peak_summary()
-    lgbm_df = df[df["model"] == "lgbm"]
+    summary_df = export_daily_peak_summary()
+
+    lgbm_df = summary_df[summary_df["model"] == "lgbm"]
     if not lgbm_df.empty:
-        print(lgbm_df.head(5).to_string())
-    else:
-        print(df.head(5).to_string())
+        print("First 5 rows for model 'lgbm':")
+        print(lgbm_df.head(5).to_string(index=False))
+    elif not summary_df.empty:
+        first_model = summary_df["model"].iloc[0]
+        print(f"First 5 rows for model '{first_model}':")
+        print(summary_df.head(5).to_string(index=False))
+
+    out_path = paths.artifacts_dir() / "daily_peak_summary.parquet"
+    print(f"Wrote daily peak summary to {out_path} ({len(summary_df)} rows)")
 
 
 if __name__ == "__main__":
