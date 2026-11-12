@@ -1,7 +1,7 @@
 .PHONY: peak analysis api ui
 
 peak:
-	python -m src.peak.classifier
+	python -m src.peak.run_all
 
 analysis:
 	python -m src.analysis.error_decomposition

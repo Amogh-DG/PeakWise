@@ -50,3 +50,15 @@ The peak threshold definition strictly respects walk-forward temporal order:
 - Thresholds are computed solely from the historical daily peaks within that fold's training window (`train_end`), either globally (90th percentile across all training days) or per-season when `peak.season_relative = true`.
 - Test-fold data is never seen during threshold calculation, model fitting, or isotonic probability calibration, preventing any lookahead leakage into peak detection.
 
+## B-13 Peak hour and error decomposition
+
+### Quantile daily maximum series
+`pred_peak_mw_p10`, `pred_peak_mw_p50`, and `pred_peak_mw_p90` represent the daily maximum value of each respective calibrated quantile forecast series across the 24 hours of that target day (`daily_max_p10`, `daily_max_p50`, `daily_max_p90` from `daily_peak_summary.parquet`). This provides conservative interval bounds on peak day load level under uncertainty.
+
+### Timing error sign convention
+`timing_error_min` is signed: `predicted_peak_ts - actual_peak_ts` in minutes. A positive value indicates the model predicted the peak later than it actually occurred; a negative value indicates the predicted peak occurred earlier than the actual peak. When `load_native.parquet` is available, sub-hourly native timestamps are used for `actual_peak_ts`.
+
+### Magnitude error sign convention
+`magnitude_error_mw` is signed: `predicted_p50_daily_max_mw - actual_peak_mw`. A positive value indicates over-prediction (predicted peak higher than actual); a negative value indicates under-prediction (shortfall).
+
+
