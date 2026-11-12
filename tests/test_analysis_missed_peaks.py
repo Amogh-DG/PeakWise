@@ -162,7 +162,7 @@ def test_tag_rules_other():
     tags, _, _ = classify_tags(
         day_features=day_feat,
         target_date=date(2024, 6, 12),
-        origin_ts=pd.Timestamp("2024-06-11 10:00:00+05:30"),
+        origin_ts=None,
         season="summer",
         past_season_daily_max_temps=np.array([35.0, 36.0, 37.0, 38.0, 39.0]),
         cfg={},

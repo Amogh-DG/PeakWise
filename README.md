@@ -70,10 +70,14 @@ TODO (B)
 <<<<<<< Updated upstream
 - B-5: Implemented Forecast page (ui/src/pages/Forecast) with Day-ahead and Week-ahead (168h) load curves, P10–P90 (80%) and P05–P95 (90%) confidence bands, peak threshold line, at-risk shaded hours, interactive peak card with outcome badges and timing/magnitude errors, and bidirectional URL query sync (?date=&model=&view=).
 - B-7: Implemented Error Heatmap page (ui/src/pages/ErrorHeatmap) with Plotly heatmap by hour (0–23) and season, metric toggle (MAPE / RMSE / Bias with diverging color scale), horizon selector (D+1 to D+7, All), statutory Delhi peak-hour outlines (06–10 and 19–23), side-by-side compare mode with shared Z-scale, and automated data-driven callouts for best/worst cells and peak vs off-peak percentage difference.
+<<<<<<< Updated upstream
 =======
 - B-3: Error decomposition and heatmap artifact (`src/analysis/error_decomposition.py`) computing MAPE, RMSE, and bias across season × hour combinations per model and horizon, saving to `artifacts_dir()/error_heatmap.json` per contract §1.8. Added unit tests in `tests/test_analysis_heatmap.py`.
 - B-4: Missed peaks artifact (`src/analysis/missed_peaks.py`) extracting backtest peak misses, auto-tagging diagnostic causes (festival, holiday, heatwave, weather_miss, weekend, other), computing data-grounded observational notes, and writing `artifacts_dir()/missed_peaks.json`. Added unit tests in `tests/test_analysis_missed_peaks.py`.
 - B-6: Accuracy page (`ui/src/pages/Accuracy/`) with multi-horizon evaluation table, benchmark improvement relative to seasonal naive, PICP / MPIW calibration tables with coverage markers, peak event confusion metrics and rule baseline comparison card, segment filter, and MAPE low-load caveat notice.
 - B-8: Missed peaks page (`ui/src/pages/MissedPeaks/`) with sortable table of missed peak events and false alarms, diagnostic tag filter chips with live counts, summary KPI strip, and drill-down drawer rendering compact day-ahead profile charts with direct navigation to the Forecast view.
+>>>>>>> Stashed changes
+=======
+- B-9: Implemented procurement advisor logic (src/procurement/advisor.py) and defaults generator (src/procurement/defaults.py) replacing the B-2 stub. Computes day-ahead schedule via quantile interpolation, cost with shortfall penalties and surplus salvage under user/newsvendor quantiles, previous-week flat mean and peak baselines, p90 risk exposure, at-risk peak hours, by-day breakdowns, documented in docs/ASSUMPTIONS_B.md, and validated by tests/test_advisor.py.
 >>>>>>> Stashed changes
 <!-- B-PROGRESS-END -->

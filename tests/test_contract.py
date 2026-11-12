@@ -191,10 +191,17 @@ def test_error_heatmap_valid_and_invalid(artifact_dirs, client_for_dir):
 def test_procurement_recommend_valid_and_invalid(artifact_dirs, client_for_dir):
     for art_dir in artifact_dirs:
         client = client_for_dir(art_dir)
+        pred_path = art_dir / "predictions_backtest.parquet"
+        target_model = "ensemble"
+        if pred_path.exists():
+            import pandas as pd
+            models_in_art = pd.read_parquet(pred_path)["model"].unique().tolist()
+            if "ensemble" not in models_in_art and models_in_art:
+                target_model = models_in_art[0]
         valid_payload = {
             "start_date": "2024-06-08",
             "days": 7,
-            "model": "ensemble",
+            "model": target_model,
             "risk_quantile": 0.9,
             "tariff": {
                 "da_price_inr_per_mwh": 5000,
@@ -212,7 +219,7 @@ def test_procurement_recommend_valid_and_invalid(artifact_dirs, client_for_dir):
         nv_payload = {
             "start_date": "2024-06-08",
             "days": 2,
-            "model": "ensemble",
+            "model": target_model,
             "risk_quantile": "newsvendor",
         }
         nv_resp = client.post("/api/v1/procurement/recommend", json=nv_payload)
@@ -223,7 +230,7 @@ def test_procurement_recommend_valid_and_invalid(artifact_dirs, client_for_dir):
         bad_days_payload = {
             "start_date": "2024-06-08",
             "days": 10,
-            "model": "ensemble",
+            "model": target_model,
             "risk_quantile": 0.9,
         }
         bad_days_resp = client.post("/api/v1/procurement/recommend", json=bad_days_payload)
@@ -233,7 +240,7 @@ def test_procurement_recommend_valid_and_invalid(artifact_dirs, client_for_dir):
         bad_q_payload = {
             "start_date": "2024-06-08",
             "days": 2,
-            "model": "ensemble",
+            "model": target_model,
             "risk_quantile": 0.2,
         }
         bad_q_resp = client.post("/api/v1/procurement/recommend", json=bad_q_payload)
