@@ -62,6 +62,7 @@ TODO (B)
 - A-10: Implemented LightGBM quantile forecaster (src/models/lgbm_quantile.py registered as "lgbm") with 5 quantile models (0.05, 0.1, 0.5, 0.9, 0.95), shared training table builder (src/models/training_table.py), outage sample weighting, validation early stopping, quantile sorting, Windows 64-bit ctypes argtypes patch, and test suite (tests/test_lgbm.py).
 - A-11: Implemented conformal calibration (src/models/calibration.py) for rolling-origin quantile calibration, test suite (tests/test_calibration.py), and integrated into backtest runner.
 - A-12: Exported daily forecast peak summaries for the peak classifier (src/models/daily_summary.py) to artifacts/daily_peak_summary.parquet, added contract §1.13 in docs/02_API_CONTRACT.md, test suite (tests/test_daily_peak_summary.py), and updated make backtest.
+- A-14: Implemented LSTM quantile forecaster (src/models/lstm_model.py registered as "lstm") — PyTorch CPU LSTM encoder (168h, 8 features, 2-layer) + MLP head (168×5 outputs), pinball loss, training-window normalization, retrain-every-N-folds policy (reuses last model when fold_id % retrain_every_n_folds != 0), max_minutes wall-time budget, CQR calibration, quantile sorting; test suite (tests/test_lstm.py).
 <!-- A-PROGRESS-END -->
 
 ### B
