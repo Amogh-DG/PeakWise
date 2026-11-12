@@ -13,4 +13,5 @@ features:
 	python -m src.features.build_known
 
 backtest:
-	@echo not implemented yet
+	python -m src.backtest.runner
+	python -m src.metrics.accuracy_table
