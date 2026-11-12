@@ -34,3 +34,19 @@ The illustrative placeholder tariffs stored in `artifacts/procurement_defaults.j
 | `resale_price_inr_per_mwh` | 2,500 |
 
 These values are sourced from `config.yaml` (`procurement.da`, `procurement.under`, `procurement.resale`) and written by `src/procurement/defaults.py`. **They are illustrative placeholders, not actual DISCOM or IEX tariffs**, and are labelled as such in the `disclaimer` field. See `docs/ASSUMPTIONS.md` for the full caveat.
+
+## B-12 Peak-event classifier
+
+### Decision threshold and recall trade-off
+
+The binary peak-event classifier predicts whether daily maximum load will exceed the fold-specific 90th percentile threshold. Grid reliability and DSM penalties penalize missed peaks heavily: under-procurement during grid stress events carries severe financial and operational exposure (DSM penalty rates up to 12,000 INR/MWh vs. surplus salvage resale discount). Consequently, the decision threshold is explicitly tuned for recall:
+- The probability threshold is chosen on the held-out validation segment of each fold's training history to maximize precision subject to achieving `recall >= peak.min_recall` (default 0.80).
+- If no threshold achieves the target minimum recall of 0.80, the optimizer falls back to maximizing $F_2$, weighting recall twice as heavily as precision.
+- This asymmetry guarantees grid operators receive early warning on at least 80% of true high-demand days while suppressing unnecessary false alarms on standard operating days.
+
+### Walk-forward threshold evaluation
+
+The peak threshold definition strictly respects walk-forward temporal order:
+- Thresholds are computed solely from the historical daily peaks within that fold's training window (`train_end`), either globally (90th percentile across all training days) or per-season when `peak.season_relative = true`.
+- Test-fold data is never seen during threshold calculation, model fitting, or isotonic probability calibration, preventing any lookahead leakage into peak detection.
+

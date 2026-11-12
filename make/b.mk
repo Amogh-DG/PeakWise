@@ -1,7 +1,7 @@
 .PHONY: peak analysis api ui
 
 peak:
-	@echo not implemented yet
+	python -m src.peak.classifier
 
 analysis:
 	python -m src.analysis.error_decomposition
