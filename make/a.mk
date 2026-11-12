@@ -11,4 +11,4 @@ features:
 	@echo not implemented yet
 
 backtest:
-	@echo not implemented yet
+	python -m src.backtest.runner
