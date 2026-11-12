@@ -10,7 +10,7 @@ data:
 	python -m src.data.clean
 
 features:
-	@echo not implemented yet
+	python -m src.features.build_known
 
 backtest:
 	@echo not implemented yet
