@@ -1,0 +1,162 @@
+{
+  "items": [
+    {
+      "model": "ensemble",
+      "date": "2024-05-29",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.22,
+      "pred_peak_ts": "2024-05-29T15:00:00+05:30",
+      "pred_peak_mw_p50": 7410.0,
+      "actual_peak_ts": "2024-05-29T22:00:00+05:30",
+      "actual_peak_mw": 7890.0,
+      "magnitude_error_mw": -480.0,
+      "timing_error_min": -420,
+      "tags": [
+        "heatwave",
+        "weather_miss"
+      ],
+      "note": "Actual max temp 3.1 \u00b0C above weather proxy; peak shifted to night due to cooling thermal inertia."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-06-18",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.28,
+      "pred_peak_ts": "2024-06-18T16:00:00+05:30",
+      "pred_peak_mw_p50": 7450.0,
+      "actual_peak_ts": "2024-06-18T22:00:00+05:30",
+      "actual_peak_mw": 7910.0,
+      "magnitude_error_mw": -460.0,
+      "timing_error_min": -360,
+      "tags": [
+        "heatwave"
+      ],
+      "note": "Sustained high humidity in late afternoon drove continuous nighttime AC load."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-06-12",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.31,
+      "pred_peak_ts": "2024-06-12T15:00:00+05:30",
+      "pred_peak_mw_p50": 7490.0,
+      "actual_peak_ts": "2024-06-12T21:00:00+05:30",
+      "actual_peak_mw": 7880.0,
+      "magnitude_error_mw": -390.0,
+      "timing_error_min": -360,
+      "tags": [
+        "heatwave",
+        "weather_miss"
+      ],
+      "note": "Heat index was severely underestimated leading to an under-forecasted evening peak."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-07-08",
+      "season": "monsoon",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.25,
+      "pred_peak_ts": "2024-07-08T15:00:00+05:30",
+      "pred_peak_mw_p50": 7380.0,
+      "actual_peak_ts": "2024-07-08T22:00:00+05:30",
+      "actual_peak_mw": 7740.0,
+      "magnitude_error_mw": -360.0,
+      "timing_error_min": -420,
+      "tags": [
+        "weather_miss",
+        "other"
+      ],
+      "note": "Monsoon rain break created sharp spike in humidity and cooling demand."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-05-15",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.33,
+      "pred_peak_ts": "2024-05-15T15:00:00+05:30",
+      "pred_peak_mw_p50": 7420.0,
+      "actual_peak_ts": "2024-05-15T21:00:00+05:30",
+      "actual_peak_mw": 7760.0,
+      "magnitude_error_mw": -340.0,
+      "timing_error_min": -360,
+      "tags": [
+        "heatwave"
+      ],
+      "note": "Early summer heatwave breached 44 \u00b0C peak temperatures."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-11-01",
+      "season": "post_monsoon",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.15,
+      "pred_peak_ts": "2024-11-01T20:00:00+05:30",
+      "pred_peak_mw_p50": 6800.0,
+      "actual_peak_ts": "2024-11-01T21:00:00+05:30",
+      "actual_peak_mw": 7110.0,
+      "magnitude_error_mw": -310.0,
+      "timing_error_min": -60,
+      "tags": [
+        "festival"
+      ],
+      "note": "Diwali evening lighting load exceeded expected holiday reduction."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-06-25",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.3,
+      "pred_peak_ts": "2024-06-25T15:00:00+05:30",
+      "pred_peak_mw_p50": 7460.0,
+      "actual_peak_ts": "2024-06-25T19:00:00+05:30",
+      "actual_peak_mw": 7750.0,
+      "magnitude_error_mw": -290.0,
+      "timing_error_min": -240,
+      "tags": [
+        "weather_miss"
+      ],
+      "note": "Cloud cover forecast was delayed, causing early evening peak."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-03-25",
+      "season": "summer",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.1,
+      "pred_peak_ts": "2024-03-25T19:00:00+05:30",
+      "pred_peak_mw_p50": 5500.0,
+      "actual_peak_ts": "2024-03-25T21:00:00+05:30",
+      "actual_peak_mw": 5780.0,
+      "magnitude_error_mw": -280.0,
+      "timing_error_min": -120,
+      "tags": [
+        "holiday",
+        "festival"
+      ],
+      "note": "Holi celebration post-event evening ramp was sharper than modeled."
+    },
+    {
+      "model": "ensemble",
+      "date": "2024-08-15",
+      "season": "monsoon",
+      "threshold_mw": 7650.0,
+      "peak_probability": 0.18,
+      "pred_peak_ts": "2024-08-15T15:00:00+05:30",
+      "pred_peak_mw_p50": 6300.0,
+      "actual_peak_ts": "2024-08-15T20:00:00+05:30",
+      "actual_peak_mw": 6550.0,
+      "magnitude_error_mw": -250.0,
+      "timing_error_min": -300,
+      "tags": [
+        "holiday",
+        "weekend"
+      ],
+      "note": "Independence Day national holiday commercial dip pattern shifted into evening residential spike."
+    }
+  ]
+}

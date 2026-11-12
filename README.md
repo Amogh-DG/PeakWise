@@ -36,6 +36,7 @@ TODO (B)
 
 <!-- A-PROGRESS-START -->
 - A-1: Repo scaffold created (directory structure, src/common config/paths/constants/seasons, Makefile, docker-compose, pytest setup).
+- A-2: Generated synthetic Delhi mock load and features (data/processed_mock/) and mock contract artifacts (artifacts_mock/), added schema test suite and make mock target.
 <!-- A-PROGRESS-END -->
 
 ### B

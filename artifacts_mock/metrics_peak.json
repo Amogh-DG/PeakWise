@@ -1,0 +1,47 @@
+{
+  "threshold_definition": "90th percentile of daily peak MW in each fold's training window",
+  "rows": [
+    {
+      "model": "ensemble",
+      "classifier": "lgbm_clf",
+      "n_days": 365,
+      "n_peak_days": 44,
+      "precision": 0.74,
+      "recall": 0.83,
+      "f1": 0.78,
+      "pr_auc": 0.81,
+      "confusion": {
+        "tp": 29,
+        "fp": 10,
+        "fn": 6,
+        "tn": 320
+      },
+      "decision_threshold": 0.35,
+      "timing_mae_min": 74.0,
+      "timing_within_1h_pct": 0.76,
+      "magnitude_mae_mw": 265.0,
+      "magnitude_bias_mw": -32.0
+    },
+    {
+      "model": "seasonal_naive",
+      "classifier": "rule_same_weekday_last_week",
+      "n_days": 365,
+      "n_peak_days": 44,
+      "precision": 0.52,
+      "recall": 0.58,
+      "f1": 0.55,
+      "pr_auc": 0.54,
+      "confusion": {
+        "tp": 20,
+        "fp": 18,
+        "fn": 15,
+        "tn": 312
+      },
+      "decision_threshold": 0.5,
+      "timing_mae_min": 125.0,
+      "timing_within_1h_pct": 0.52,
+      "magnitude_mae_mw": 460.0,
+      "magnitude_bias_mw": -85.0
+    }
+  ]
+}

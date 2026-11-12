@@ -1,0 +1,128 @@
+{
+  "models": {
+    "lgbm": [
+      {
+        "feature": "wx_cdh_24",
+        "importance": 0.182,
+        "group": "weather"
+      },
+      {
+        "feature": "ar_same_hour_last_week",
+        "importance": 0.141,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "wx_heat_index_c",
+        "importance": 0.125,
+        "group": "weather"
+      },
+      {
+        "feature": "ar_same_hour_last_known_day",
+        "importance": 0.11,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "wx_temp_roll_24",
+        "importance": 0.088,
+        "group": "thermal_inertia"
+      },
+      {
+        "feature": "cal_hour_sin",
+        "importance": 0.075,
+        "group": "calendar"
+      },
+      {
+        "feature": "cal_hour_cos",
+        "importance": 0.071,
+        "group": "calendar"
+      },
+      {
+        "feature": "wx_temp_c",
+        "importance": 0.065,
+        "group": "weather"
+      },
+      {
+        "feature": "cal_dow",
+        "importance": 0.048,
+        "group": "calendar"
+      },
+      {
+        "feature": "ar_last_week_daily_peak",
+        "importance": 0.038,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "trend_t",
+        "importance": 0.032,
+        "group": "trend"
+      },
+      {
+        "feature": "cal_is_festival_window",
+        "importance": 0.025,
+        "group": "festival"
+      }
+    ],
+    "xgboost": [
+      {
+        "feature": "wx_cdh_24",
+        "importance": 0.19,
+        "group": "weather"
+      },
+      {
+        "feature": "ar_same_hour_last_week",
+        "importance": 0.145,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "wx_heat_index_c",
+        "importance": 0.118,
+        "group": "weather"
+      },
+      {
+        "feature": "ar_same_hour_last_known_day",
+        "importance": 0.108,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "wx_temp_roll_24",
+        "importance": 0.092,
+        "group": "thermal_inertia"
+      },
+      {
+        "feature": "cal_hour_sin",
+        "importance": 0.072,
+        "group": "calendar"
+      },
+      {
+        "feature": "cal_hour_cos",
+        "importance": 0.068,
+        "group": "calendar"
+      },
+      {
+        "feature": "wx_temp_c",
+        "importance": 0.062,
+        "group": "weather"
+      },
+      {
+        "feature": "cal_dow",
+        "importance": 0.05,
+        "group": "calendar"
+      },
+      {
+        "feature": "ar_last_week_daily_peak",
+        "importance": 0.036,
+        "group": "autoregressive"
+      },
+      {
+        "feature": "trend_t",
+        "importance": 0.034,
+        "group": "trend"
+      },
+      {
+        "feature": "cal_is_festival_window",
+        "importance": 0.025,
+        "group": "festival"
+      }
+    ]
+  }
+}

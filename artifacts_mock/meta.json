@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "timezone": "Asia/Kolkata",
+  "origin_hour_local": 10,
+  "data_range": {
+    "start": "2022-01-01T00:00:00+05:30",
+    "end": "2024-12-31T23:00:00+05:30"
+  },
+  "backtest_range": {
+    "start": "2024-01-01",
+    "end": "2024-12-31"
+  },
+  "quantiles": [
+    0.05,
+    0.1,
+    0.5,
+    0.9,
+    0.95
+  ],
+  "peak_threshold_mw_latest": 7650.0,
+  "peak_definition": "Daily peak above the 90th percentile of daily peaks in the fold's training window",
+  "season_definition": {
+    "winter": [
+      12,
+      1,
+      2
+    ],
+    "summer": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "monsoon": [
+      7,
+      8,
+      9
+    ],
+    "post_monsoon": [
+      10,
+      11
+    ]
+  },
+  "peak_hours": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "models": [
+    "seasonal_naive",
+    "linear",
+    "lgbm",
+    "xgboost",
+    "prophet",
+    "lstm",
+    "ensemble"
+  ],
+  "weather_proxy_note": "Backtests use observed weather plus horizon-scaled noise as a stand-in for archived weather forecasts."
+}

@@ -1,0 +1,9 @@
+{
+  "tariff": {
+    "da_price_inr_per_mwh": 5000,
+    "under_price_inr_per_mwh": 12000,
+    "resale_price_inr_per_mwh": 2500
+  },
+  "disclaimer": "Illustrative placeholder values, not actual DISCOM tariffs. See docs/ASSUMPTIONS.md.",
+  "default_risk_quantile": 0.9
+}
