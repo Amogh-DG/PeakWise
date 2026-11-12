@@ -38,6 +38,8 @@ TODO (B)
 - A-1: Repo scaffold created (directory structure, src/common config/paths/constants/seasons, Makefile, docker-compose, pytest setup).
 - A-2: Generated synthetic Delhi mock load and features (data/processed_mock/) and mock contract artifacts (artifacts_mock/), added schema test suite and make mock target.
 - A-7: Built rolling-origin backtest harness (folds generation, forecaster registry and protocol, persistence baseline, runner with resume and progress bar, test suite, make backtest target).
+- A-8: Implemented and registered baselines (seasonal_naive with 7-day step-back rule and training residual quantiles, linear regression on known features and AR terms, quantile sorting utility, ran both through backtest harness).
+- A-9: Built metrics library (mape, rmse, mae, bias, pinball, picp, mpiw, improvement_pct), segments masking, and accuracy table generator writing contract artifacts/metrics_accuracy.json; updated make backtest.
 <!-- A-PROGRESS-END -->
 
 ### B
