@@ -37,6 +37,8 @@ TODO (B)
 <!-- A-PROGRESS-START -->
 - A-1: Repo scaffold created (directory structure, src/common config/paths/constants/seasons, Makefile, docker-compose, pytest setup).
 - A-2: Generated synthetic Delhi mock load and features (data/processed_mock/) and mock contract artifacts (artifacts_mock/), added schema test suite and make mock target.
+- A-3: Ingested real Delhi electricity demand and Open-Meteo weather data, produced raw-ingested parquet files with caching, data documentation, and ingest test suite.
+- A-4: Cleaned and imputed load data (load_hourly.parquet): complete hourly IST index, 455 gaps imputed (239 linear, 216 hour-of-week), 0 outage suspects at MAD-z threshold 6.0 (max z=4.20), wrote docs/DATA_QUALITY.md with real numbers.
 <!-- A-PROGRESS-END -->
 
 ### B

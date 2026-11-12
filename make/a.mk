@@ -5,7 +5,9 @@ mock:
 	python -m scripts.make_mock_artifacts
 
 data:
-	@echo not implemented yet
+	python -m src.data.ingest_load
+	python -m src.data.ingest_weather
+	python -m src.data.clean
 
 features:
 	@echo not implemented yet
