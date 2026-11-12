@@ -4,44 +4,44 @@
     {
       "model": "ensemble",
       "classifier": "lgbm_clf",
-      "n_days": 365,
-      "n_peak_days": 44,
-      "precision": 0.74,
-      "recall": 0.83,
-      "f1": 0.78,
-      "pr_auc": 0.81,
+      "n_days": 359,
+      "n_peak_days": 59,
+      "precision": 0.7895,
+      "recall": 0.7627,
+      "f1": 0.7759,
+      "pr_auc": 0.834,
       "confusion": {
-        "tp": 29,
-        "fp": 10,
-        "fn": 6,
-        "tn": 320
+        "tp": 45,
+        "fp": 12,
+        "fn": 14,
+        "tn": 288
       },
-      "decision_threshold": 0.35,
-      "timing_mae_min": 74.0,
-      "timing_within_1h_pct": 0.76,
-      "magnitude_mae_mw": 265.0,
-      "magnitude_bias_mw": -32.0
+      "decision_threshold": 0.05,
+      "timing_mae_min": 57.7,
+      "timing_within_1h_pct": 0.7911,
+      "magnitude_mae_mw": 106.4,
+      "magnitude_bias_mw": 63.4
     },
     {
       "model": "seasonal_naive",
       "classifier": "rule_same_weekday_last_week",
-      "n_days": 365,
-      "n_peak_days": 44,
-      "precision": 0.52,
-      "recall": 0.58,
-      "f1": 0.55,
-      "pr_auc": 0.54,
+      "n_days": 359,
+      "n_peak_days": 59,
+      "precision": 0.8421,
+      "recall": 0.8136,
+      "f1": 0.8276,
+      "pr_auc": 0.8432,
       "confusion": {
-        "tp": 20,
-        "fp": 18,
-        "fn": 15,
-        "tn": 312
+        "tp": 48,
+        "fp": 9,
+        "fn": 11,
+        "tn": 291
       },
       "decision_threshold": 0.5,
-      "timing_mae_min": 125.0,
-      "timing_within_1h_pct": 0.52,
-      "magnitude_mae_mw": 460.0,
-      "magnitude_bias_mw": -85.0
+      "timing_mae_min": 117.7,
+      "timing_within_1h_pct": 0.6072,
+      "magnitude_mae_mw": 204.9,
+      "magnitude_bias_mw": -2.7
     }
   ]
 }
