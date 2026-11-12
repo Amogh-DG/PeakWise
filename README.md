@@ -35,7 +35,38 @@ For a fresh AI session: read the README Progress log, then docs/.
 
 ## Results
 
-Model accuracy and backtest evaluation metrics will be recorded here after backtest runs.
+Walk-forward backtest evaluation across Delhi electricity demand (2023–2026), evaluated out-of-sample with point-in-time temporal isolation and horizon-scaled weather forecast noise:
+
+### Multi-Horizon Model Performance
+
+| Model | Horizon | Segment | RMSE (MW) | MAPE (%) | Improvement vs Baseline (RMSE) | Improvement vs Baseline (MAPE) | PICP 80 | PICP 90 |
+|---|---|---|---|---|---|---|---|---|
+| **ensemble** | D+1 | all | **154.5** | **2.68%** | **+50.9%** | **+45.6%** | 0.77 | 0.88 |
+| **ensemble** | D+1 | peak_hours | **158.4** | **2.57%** | **+49.2%** | **+43.0%** | 0.76 | 0.87 |
+| **ensemble** | D+7 | all | **172.3** | **2.93%** | **+56.8%** | **+51.7%** | 0.76 | 0.87 |
+| **ensemble** | D+7 | peak_hours | **178.4** | **2.81%** | **+54.0%** | **+49.0%** | 0.75 | 0.86 |
+| **lgbm** | D+1 | all | **155.7** | **2.69%** | **+50.5%** | **+45.4%** | 0.67 | 0.81 |
+| **lgbm** | D+1 | peak_hours | **160.9** | **2.58%** | **+48.4%** | **+42.8%** | 0.65 | 0.79 |
+| **lgbm** | D+7 | all | **172.0** | **2.89%** | **+56.9%** | **+52.3%** | 0.67 | 0.80 |
+| **lgbm** | D+7 | peak_hours | **180.7** | **2.80%** | **+53.4%** | **+49.2%** | 0.67 | 0.79 |
+| **linear** | D+1 | all | 262.5 | 4.68% | +16.6% | +5.1% | 0.78 | 0.89 |
+| **linear** | D+1 | peak_hours | 253.8 | 4.16% | +18.6% | +7.8% | 0.77 | 0.88 |
+| **linear** | D+7 | all | 332.6 | 5.70% | +16.7% | +5.9% | 0.68 | 0.79 |
+| **linear** | D+7 | peak_hours | 315.9 | 5.01% | +18.6% | +9.1% | 0.69 | 0.80 |
+| **seasonal_naive** *(baseline)* | D+1 | all | 314.7 | 4.93% | — | — | 0.79 | 0.89 |
+| **seasonal_naive** *(baseline)* | D+1 | peak_hours | 311.8 | 4.51% | — | — | 0.78 | 0.89 |
+| **seasonal_naive** *(baseline)* | D+7 | all | 399.3 | 6.06% | — | — | 0.71 | 0.82 |
+| **seasonal_naive** *(baseline)* | D+7 | peak_hours | 388.0 | 5.51% | — | — | 0.71 | 0.82 |
+
+### Key Findings & Feature Drivers
+- **Beating the Baseline at Peak Hours**: LightGBM achieves a **48.4% reduction in peak-hour RMSE on Day 1** (160.9 MW vs 311.8 MW) and **53.4% on Day 7** (180.7 MW vs 388.0 MW), proving that thermal dynamics and autoregressive level anchoring effectively model peak air-conditioning surges.
+- **Top Feature Drivers (SHAP TreeExplainer)**:
+  1. `ar_same_hour_last_week` (~39.3% LightGBM / ~50.0% XGBoost): Dominant weekly cyclical load signature.
+  2. `ar_same_hour_last_known_day` (~13.1% LightGBM / ~14.8% XGBoost): Anchoring to the immediate prior day's operating regime.
+  3. `wx_dewpoint_c` & `wx_cdh_24` (~12.6% combined): Severe impact of latent atmospheric heat and accumulated cooling degree hours on cooling demand.
+  4. `trend_t` (~7.6%): Captures underlying secular economic and population electrification growth across Delhi.
+  5. `cal_dow` & `cal_hour`: Diurnal work cycle and weekend commercial load shedding.
+- **Peak vs Off-Peak Sensitivity**: Peak-hour feature importance demonstrates substantially elevated sensitivity to humidity (`wx_dewpoint_c`) and 24-hour heat accumulation (`wx_cdh_24`), whereas off-peak hours are primarily driven by baseline autoregressive level indicators.
 
 ## Deployment
 
@@ -62,7 +93,10 @@ TODO (B)
 - A-10: Implemented LightGBM quantile forecaster (src/models/lgbm_quantile.py registered as "lgbm") with 5 quantile models (0.05, 0.1, 0.5, 0.9, 0.95), shared training table builder (src/models/training_table.py), outage sample weighting, validation early stopping, quantile sorting, Windows 64-bit ctypes argtypes patch, and test suite (tests/test_lgbm.py).
 - A-11: Implemented conformal calibration (src/models/calibration.py) for rolling-origin quantile calibration, test suite (tests/test_calibration.py), and integrated into backtest runner.
 - A-12: Exported daily forecast peak summaries for the peak classifier (src/models/daily_summary.py) to artifacts/daily_peak_summary.parquet, added contract §1.13 in docs/02_API_CONTRACT.md, test suite (tests/test_daily_peak_summary.py), and updated make backtest.
+- A-13: Implemented Prophet and XGBoost comparison models (src/models/prophet_model.py registered as "prophet", src/models/xgboost_model.py registered as "xgboost") with holiday awareness (festivals + Indian public holidays), weather regressors, XGBoost quantile regression (reg:quantileerror), residual quantile uncertainty estimation, CQR calibration integration, ASSUMPTIONS_A.md updates, and test suite (tests/test_prophet_xgb.py).
 - A-14: Implemented LSTM quantile forecaster (src/models/lstm_model.py registered as "lstm") — PyTorch CPU LSTM encoder (168h, 8 features, 2-layer) + MLP head (168×5 outputs), pinball loss, training-window normalization, retrain-every-N-folds policy (reuses last model when fold_id % retrain_every_n_folds != 0), max_minutes wall-time budget, CQR calibration, quantile sorting; test suite (tests/test_lstm.py).
+- A-15: Implemented quantile averaging ensemble forecaster (src/models/ensemble.py registered as "ensemble") combining available base models with per-horizon-day weights fitted to minimize pinball loss on pre-test validation windows, CQR interval recalibration, updated backtest predictions, accuracy table and daily peak summaries, and unit test suite (tests/test_ensemble.py).
+- A-16: Feature importance and README results: implemented feature grouping dictionary and resolver (src/models/feature_groups.py), SHAP TreeExplainer and normalized feature importances (src/models/importance.py) writing artifacts/feature_importance.json and artifacts/feature_importance_by_segment.json, populated comprehensive Results table comparing D+1 and D+7 for all and peak_hours against baseline, and unit test suite (tests/test_importance.py).
 <!-- A-PROGRESS-END -->
 
 ### B

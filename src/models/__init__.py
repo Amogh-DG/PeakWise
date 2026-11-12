@@ -1,4 +1,4 @@
-from src.models import calibration, lgbm_quantile, linear, prophet_model, seasonal_naive, xgboost_model
+from src.models import calibration, ensemble, lgbm_quantile, linear, prophet_model, seasonal_naive, xgboost_model
 
 try:
     from src.models import lstm_model
@@ -7,6 +7,7 @@ except ImportError:
 
 __all__ = [
     "calibration",
+    "ensemble",
     "lgbm_quantile",
     "linear",
     "prophet_model",

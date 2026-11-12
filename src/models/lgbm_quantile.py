@@ -40,7 +40,7 @@ lgb.basic._LIB.LGBM_BoosterFree.restype = ctypes.c_int
 
 
 def _safe_dataset_set_field(self, field_name, data):
-    if self._handle is None:
+    if not self._handle or getattr(self._handle, "value", None) is None:
         raise ValueError(f"Cannot set {field_name} before construct dataset")
     if data is None:
         lgb.basic._safe_call(

@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 
 from src.models.lstm_model import LSTMNet, LSTMForecaster, SEQ_LEN, N_HORIZONS, N_FEATURES, N_QUANTILES
 
