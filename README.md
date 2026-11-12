@@ -49,4 +49,5 @@ TODO (B)
 ### B
 
 <!-- B-PROGRESS-START -->
+- B-3: Error decomposition and heatmap artifact — src/analysis/error_decomposition.py computes mape/rmse/bias by season×hour, peak/off-peak, and horizon_day per model; writes artifacts_dir()/error_heatmap.json per contract §1.8; make/b.mk analysis target wired; tests/test_analysis_heatmap.py covers shape, season order, min-obs null, and hand-computed mape example.
 <!-- B-PROGRESS-END -->
