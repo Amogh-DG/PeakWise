@@ -137,6 +137,10 @@ def generate_mock_artifacts():
     pred_df["horizon_day"] = pred_df["horizon_day"].astype(np.int32)
     pred_df.to_parquet(target_dir / "predictions_backtest.parquet", index=False, compression="snappy")
 
+    from src.models.daily_summary import build_daily_peak_summary
+    mock_summary = build_daily_peak_summary(pred_df)
+    mock_summary.to_parquet(target_dir / "daily_peak_summary.parquet", index=False, compression="snappy")
+
     threshold_mw = 7650.0
     unique_dates = sorted(list({ts.strftime("%Y-%m-%d") for ts in pred_df["target_ts"]}))
     peak_records = []

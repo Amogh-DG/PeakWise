@@ -1,7 +1,7 @@
 # 02 — API & Data Contract
 
 **Status:** DRAFT → frozen at Checkpoint 0. After freeze, any change = edit this file + tell the whole team (version bump in §5).
-**Version:** `1.0.0`
+**Version:** `1.1.0`
 
 Two layers are specified here:
 1. **§1 Data artifacts** — the Parquet/JSON files roles A/B/C produce. This is how the roles talk to each other.
@@ -263,6 +263,23 @@ Definitions: `da_price` = price paid per MWh scheduled day-ahead; `under_price` 
 }
 ```
 
+### 1.13 `artifacts/daily_peak_summary.parquet` — producer A, consumer B
+
+One row per `(model, origin_ts, date)`. Summary of daily forecast peaks and extremes across the 24 hourly values of each target day for peak event classification and evaluation.
+
+| Column | Type | Notes |
+|---|---|---|
+| `model` | string | forecaster model enum |
+| `origin_ts` | datetime tz | 10:00 IST on D0, tz-aware (`Asia/Kolkata`) |
+| `date` | date | target calendar date (`date32` / `YYYY-MM-DD`) |
+| `horizon_day` | int | 1..7 |
+| `daily_max_p10` | float | maximum over the day's 24 hourly values of p10 |
+| `daily_max_p50` | float | maximum over the day's 24 hourly values of p50 |
+| `daily_max_p90` | float | maximum over the day's 24 hourly values of p90 |
+| `argmax_hour_p50` | int | hour of day (0..23) where p50 reaches its daily maximum |
+| `daily_min_p50` | float | minimum over the day's 24 hourly values of p50 |
+| `y_true_daily_max` | float \| null | maximum over the day's 24 hourly values of y_true (null if unobserved) |
+
 ---
 
 ## 2. REST API (FastAPI, prefix `/api/v1`)
@@ -494,3 +511,4 @@ All errors:
 | Version | Date | Change |
 |---|---|---|
 | 1.0.0 | 2026-11-12 | Initial draft |
+| 1.1.0 | 2026-11-12 | Add §1.13 daily_peak_summary.parquet (producer A, consumer B) |

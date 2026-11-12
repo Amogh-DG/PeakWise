@@ -15,3 +15,4 @@ features:
 backtest:
 	python -m src.backtest.runner
 	python -m src.metrics.accuracy_table
+	python -m src.models.daily_summary

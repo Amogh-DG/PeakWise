@@ -6,7 +6,7 @@ node_modules/
 ui/dist/
 data/raw/
 data/processed/
-models/
+/models/
 artifacts/
 
 # OS / Editor files

@@ -40,18 +40,22 @@ def generate_mock_data():
     wind_ms = np.clip(2.5 + 1.0 * np.sin(2 * np.pi * (hour - 12) / 24.0) + np.random.normal(0, 0.5, size=n), 0.5, 15.0)
     cloud_pct = np.clip(np.where(is_monsoon, 65.0, 20.0) + np.random.normal(0, 10.0, size=n), 0.0, 100.0)
 
-    heat_index_c = np.where(
-        temp_c >= 27.0,
-        -8.78469475556
-        + 1.61139411 * temp_c
-        + 2.33854883889 * rh_pct
-        - 0.14611605 * temp_c * rh_pct
-        - 0.012308094 * (temp_c**2)
-        - 0.0164248277778 * (rh_pct**2)
-        + 0.002211732 * (temp_c**2) * rh_pct
-        + 0.00072546 * temp_c * (rh_pct**2)
-        - 0.000003582 * (temp_c**2) * (rh_pct**2),
-        temp_c,
+    heat_index_c = np.clip(
+        np.where(
+            temp_c >= 27.0,
+            -8.78469475556
+            + 1.61139411 * temp_c
+            + 2.33854883889 * rh_pct
+            - 0.14611605 * temp_c * rh_pct
+            - 0.012308094 * (temp_c**2)
+            - 0.0164248277778 * (rh_pct**2)
+            + 0.002211732 * (temp_c**2) * rh_pct
+            + 0.00072546 * temp_c * (rh_pct**2)
+            - 0.000003582 * (temp_c**2) * (rh_pct**2),
+            temp_c,
+        ),
+        -20.0,
+        65.0,
     )
 
     cdh = np.maximum(0.0, temp_c - cdh_base)
