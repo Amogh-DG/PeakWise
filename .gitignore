@@ -10,3 +10,15 @@ ui/dist/
 .pytest_cache/
 .ruff_cache/
 
+.venv/
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+node_modules/
+ui/dist/
+data/raw/
+data/processed/
+models/
+artifacts/
+
+.gitignore
