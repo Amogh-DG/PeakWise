@@ -44,6 +44,7 @@ TODO (B)
 - A-4: Cleaned and imputed load data (load_hourly.parquet): complete hourly IST index, 455 gaps imputed (239 linear, 216 hour-of-week), 0 outage suspects at MAD-z threshold 6.0 (max z=4.20), wrote docs/DATA_QUALITY.md with real numbers.
 - A-5: Built known-in-advance features (features_known.parquet) covering calendar, verified festival distances/windows, historical event flags, and weather-derived thermal/CDH/heat-index metrics.
 - A-6: Implemented strictly leak-free origin-relative autoregressive features (ar_features.py with mandatory 50-origin leakage test), horizon-scaled deterministic weather noise simulation (weather_noise.py), and documented NWP proxy in docs/ASSUMPTIONS_A.md.
+- A-10: Implemented LightGBM quantile forecaster (src/models/lgbm_quantile.py registered as "lgbm") with 5 quantile models (0.05, 0.1, 0.5, 0.9, 0.95), shared training table builder (src/models/training_table.py), outage sample weighting, validation early stopping, quantile sorting, Windows 64-bit ctypes argtypes patch, and test suite (tests/test_lgbm.py).
 <!-- A-PROGRESS-END -->
 
 ### B

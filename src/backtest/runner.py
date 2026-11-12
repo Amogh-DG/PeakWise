@@ -6,6 +6,7 @@ from tqdm import tqdm
 from src.backtest.folds import make_folds
 from src.backtest.registry import REGISTRY, get_forecaster
 import src.backtest.persistence
+import src.models
 from src.common import config, paths
 
 

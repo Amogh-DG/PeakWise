@@ -1,4 +1,6 @@
 import pytest
+
+import src.models
 from src.common.paths import repo_root
 
 
