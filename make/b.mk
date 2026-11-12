@@ -10,4 +10,4 @@ api:
 	python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 ui:
-	@echo not implemented yet
+	cd ui && npm install && npm run dev -- --host --port 5173
