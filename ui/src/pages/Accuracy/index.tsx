@@ -1,34 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getBacktestMetrics, getBacktestPeakMetrics } from '../../api/client';
-import {
-  BacktestMetricsResponse,
-  PeakMetricsResponse,
-} from '../../api/types';
-import { StatTile } from '../../components/shared/StatTile';
+import { BacktestMetricsResponse, PeakMetricsResponse } from '../../api/types';
 import { ChartCard } from '../../components/shared/ChartCard';
-import {
-  AccuracyTable,
-  MetricType,
-} from '../../components/eval/AccuracyTable';
+import { AccuracyTable, MetricType } from '../../components/eval/AccuracyTable';
 import { CalibrationTable } from '../../components/eval/CalibrationTable';
 import { PeakEventsCard } from '../../components/eval/PeakEventsCard';
+import { MODEL_LABELS, ModelId } from '../../constants/models';
 
-const SEGMENT_OPTIONS: { id: string; label: string }[] = [
-  { id: 'all', label: 'All Segments' },
-  { id: 'peak_hours', label: 'Peak Hours (06-10, 19-23)' },
-  { id: 'off_peak', label: 'Off-Peak Hours' },
-  { id: 'winter', label: 'Winter (Dec–Feb)' },
-  { id: 'summer', label: 'Summer (Mar–Jun)' },
-  { id: 'monsoon', label: 'Monsoon (Jul–Sep)' },
-  { id: 'post_monsoon', label: 'Post-Monsoon (Oct–Nov)' },
-];
-
-const METRIC_OPTIONS: { id: MetricType; label: string; unit: string }[] = [
-  { id: 'mape', label: 'MAPE', unit: '%' },
-  { id: 'rmse_mw', label: 'RMSE', unit: 'MW' },
-  { id: 'mae_mw', label: 'MAE', unit: 'MW' },
-  { id: 'bias_mw', label: 'Bias', unit: 'MW' },
-  { id: 'pinball', label: 'Pinball Loss', unit: 'MW' },
+const SEGMENTS = [
+  { id: 'all', label: 'All days' },
+  { id: 'winter', label: 'Winter' },
+  { id: 'summer', label: 'Summer' },
+  { id: 'monsoon', label: 'Monsoon' },
+  { id: 'post_monsoon', label: 'Post-monsoon' },
+  { id: 'peak_hours', label: 'Peak hours' },
+  { id: 'off_peak', label: 'Off-peak' },
 ];
 
 export const AccuracyPage: React.FC = () => {
@@ -70,167 +56,101 @@ export const AccuracyPage: React.FC = () => {
     };
   }, []);
 
-  const d1EnsembleMape = metricsData?.rows.find(
-    (r) =>
-      r.model === 'ensemble' &&
-      r.segment === selectedSegment &&
-      String(r.horizon_day) === '1'
-  );
+  const metricLabel = selectedMetric === 'mape' ? 'MAPE %' : selectedMetric === 'rmse_mw' ? 'RMSE MW' : 'MAE MW';
 
-  const d1EnsembleRmse = metricsData?.rows.find(
-    (r) =>
-      r.model === 'ensemble' &&
-      r.segment === selectedSegment &&
-      String(r.horizon_day) === '1'
-  );
+  const improvementRows = useMemo(() => {
+    if (!metricsData) return [];
+    const models = ['xgboost', 'lgbm', 'ensemble'];
+    const baselineRow = metricsData.rows.find(
+      (r) => r.model === 'seasonal_naive' && r.segment === selectedSegment && String(r.horizon_day) === '1'
+    );
+    const baseVal = baselineRow ? baselineRow[selectedMetric] : 0;
 
-  const classifierPeakRow = peakMetricsData?.rows.find(
-    (r) => r.classifier === 'lgbm_clf' || r.model === 'ensemble'
-  ) || peakMetricsData?.rows[0];
+    return models.map((m) => {
+      const row = metricsData.rows.find(
+        (r) => r.model === m && r.segment === selectedSegment && String(r.horizon_day) === '1'
+      );
+      const val = row ? row[selectedMetric] : 0;
+      let imp = 0;
+      if (baseVal > 0 && val > 0) {
+        imp = ((val - baseVal) / baseVal) * 100;
+      }
+      return {
+        model: m,
+        label: MODEL_LABELS[m as ModelId] || m,
+        improvement: `${imp > 0 ? '+' : ''}${Math.round(imp)}%`,
+      };
+    });
+  }, [metricsData, selectedSegment, selectedMetric]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-brand-border">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-brand-text">
-            Model Accuracy & Evaluation
-          </h1>
-          <p className="text-sm text-brand-muted mt-0.5">
-            Walk-forward backtest evaluation across seasons, peak hours, and horizons.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-6">
+          Accuracy
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2">
-            <label htmlFor="segment-select" className="text-xs text-brand-muted font-medium">
-              Segment:
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-col">
+            <label className="text-xs text-slate-600 mb-1.5 font-normal">
+              Segment
             </label>
             <select
-              id="segment-select"
               value={selectedSegment}
               onChange={(e) => setSelectedSegment(e.target.value)}
-              className="bg-brand-surface border border-brand-border text-brand-text text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-accent cursor-pointer"
+              className="bg-white text-slate-800 border border-slate-300 rounded-lg px-3.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer min-w-[160px]"
             >
-              {SEGMENT_OPTIONS.map((seg) => (
-                <option key={seg.id} value={seg.id}>
-                  {seg.label}
+              {SEGMENTS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center bg-brand-surface border border-brand-border rounded-lg p-0.5">
-            {METRIC_OPTIONS.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setSelectedMetric(m.id)}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
-                  selectedMetric === m.id
-                    ? 'bg-brand-accent text-brand-bg font-semibold'
-                    : 'text-brand-muted hover:text-brand-text'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setSelectedMetric('mape')}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedMetric === 'mape'
+                  ? 'bg-[#1d4ed8] text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              MAPE
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMetric('mae_mw')}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedMetric === 'mae_mw'
+                  ? 'bg-[#1d4ed8] text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              MAE
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMetric('rmse_mw')}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedMetric === 'rmse_mw'
+                  ? 'bg-[#1d4ed8] text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              RMSE
+            </button>
           </div>
         </div>
       </div>
 
-      {selectedMetric === 'mape' && (
-        <div className="flex items-center space-x-2 bg-amber-950/20 border border-amber-900/30 rounded-lg px-3.5 py-2 text-xs text-amber-300">
-          <span className="font-semibold uppercase tracking-wider text-[10px] bg-amber-900/40 px-1.5 py-0.5 rounded border border-amber-800/40">
-            MAPE Caveat
-          </span>
-          <span>
-            MAPE is vulnerable to small load denominators during winter nights (~2,000 MW);
-            evaluate alongside RMSE, MAE, and the peak-hours segment.
-          </span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile
-          label="D+1 Ensemble MAPE"
-          value={
-            d1EnsembleMape ? `${d1EnsembleMape.mape.toFixed(2)}%` : '—'
-          }
-          delta={
-            d1EnsembleMape?.improvement_mape_pct !== null &&
-            d1EnsembleMape?.improvement_mape_pct !== undefined
-              ? `${d1EnsembleMape.improvement_mape_pct > 0 ? '+' : ''}${d1EnsembleMape.improvement_mape_pct.toFixed(1)}% vs Base`
-              : undefined
-          }
-          deltaType={
-            (d1EnsembleMape?.improvement_mape_pct ?? 0) > 0 ? 'positive' : 'negative'
-          }
-          subtitle={`Segment: ${
-            SEGMENT_OPTIONS.find((s) => s.id === selectedSegment)?.label || selectedSegment
-          }`}
-        />
-        <StatTile
-          label="D+1 Ensemble RMSE"
-          value={
-            d1EnsembleRmse ? d1EnsembleRmse.rmse_mw.toFixed(1) : '—'
-          }
-          unit="MW"
-          delta={
-            d1EnsembleRmse?.improvement_rmse_pct !== null &&
-            d1EnsembleRmse?.improvement_rmse_pct !== undefined
-              ? `${d1EnsembleRmse.improvement_rmse_pct > 0 ? '+' : ''}${d1EnsembleRmse.improvement_rmse_pct.toFixed(1)}% vs Base`
-              : undefined
-          }
-          deltaType={
-            (d1EnsembleRmse?.improvement_rmse_pct ?? 0) > 0 ? 'positive' : 'negative'
-          }
-          subtitle="Ensemble vs Seasonal Naive"
-        />
-        <StatTile
-          label="Peak Event Recall"
-          value={
-            classifierPeakRow
-              ? `${(classifierPeakRow.recall * 100).toFixed(1)}%`
-              : '—'
-          }
-          delta={
-            classifierPeakRow
-              ? `F1: ${classifierPeakRow.f1.toFixed(3)}`
-              : undefined
-          }
-          deltaType="positive"
-          subtitle={
-            classifierPeakRow
-              ? `Precision: ${(classifierPeakRow.precision * 100).toFixed(1)}%`
-              : 'Target: ≥ 80.0%'
-          }
-        />
-        <StatTile
-          label="Peak Timing Precision"
-          value={
-            classifierPeakRow
-              ? `${(classifierPeakRow.timing_within_1h_pct * 100).toFixed(1)}%`
-              : '—'
-          }
-          subtitle={
-            classifierPeakRow
-              ? `MAE: ${Math.round(classifierPeakRow.timing_mae_min)} min`
-              : 'Within ±1 hour'
-          }
-        />
-      </div>
-
       <ChartCard
-        title={`Accuracy Matrix: ${
-          METRIC_OPTIONS.find((m) => m.id === selectedMetric)?.label
-        } by Horizon`}
-        subtitle={`Comparing model performance across horizons (D+1 to D+7 and All) on ${
-          SEGMENT_OPTIONS.find((s) => s.id === selectedSegment)?.label
-        }. Values indicate metric magnitude with relative improvement vs Seasonal Naive.`}
+        title={`Accuracy by horizon (${metricLabel})`}
         loading={loading}
         error={error}
         empty={!metricsData || metricsData.rows.length === 0}
-        emptyMessage="No accuracy metrics available"
       >
         {metricsData && (
           <AccuracyTable
@@ -241,42 +161,43 @@ export const AccuracyPage: React.FC = () => {
         )}
       </ChartCard>
 
-      <ChartCard
-        title="Interval Calibration & Coverage (PICP)"
-        subtitle="Empirical coverage evaluation of probabilistic intervals (P10–P90 nominal 80%, P05–P95 nominal 90%) and sharpness (MPIW)."
-        loading={loading}
-        error={error}
-        empty={!metricsData || metricsData.rows.length === 0}
-        emptyMessage="No calibration data available"
-      >
-        {metricsData && (
-          <CalibrationTable
-            rows={metricsData.rows}
-            calibrationComparison={
-              (metricsData as unknown as { calibration_comparison?: unknown })
-                .calibration_comparison
-            }
-          />
-        )}
-      </ChartCard>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-4">
+            Improvement over seasonal-naive
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="border-b border-slate-200 text-xs text-slate-700 font-semibold">
+                <tr>
+                  <th className="py-2.5 px-3">Model</th>
+                  <th className="py-2.5 px-3 text-right">vs naive</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {improvementRows.map((row) => (
+                  <tr key={row.model} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-2.5 px-3 font-medium text-slate-900">{row.label}</td>
+                    <td className="py-2.5 px-3 text-right text-slate-700 font-medium">
+                      {row.improvement}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      <ChartCard
-        title="Peak Event Classification & Timing Evaluation"
-        subtitle="Dedicated classification performance for top-decile peak day detection and peak hour timing error."
-        loading={loading}
-        error={error}
-        empty={!peakMetricsData || peakMetricsData.rows.length === 0}
-        emptyMessage="No peak metrics available"
-      >
-        {peakMetricsData && (
-          <PeakEventsCard
-            rows={peakMetricsData.rows}
-            thresholdDefinition={peakMetricsData.threshold_definition}
-          />
-        )}
-      </ChartCard>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-4">Calibration</h3>
+          {metricsData && <CalibrationTable rows={metricsData.rows} />}
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Peak events</h3>
+          {peakMetricsData && <PeakEventsCard rows={peakMetricsData.rows} />}
+        </div>
+      </div>
     </div>
   );
 };
-
-export default AccuracyPage;

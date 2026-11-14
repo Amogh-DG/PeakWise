@@ -11,14 +11,14 @@ export const MODELS = [
 export type ModelId = (typeof MODELS)[number];
 
 export const BASELINE_MODEL: ModelId = 'seasonal_naive';
-export const DEFAULT_MODEL: ModelId = 'ensemble';
+export const DEFAULT_MODEL: ModelId = 'lgbm';
 
 export const MODEL_LABELS: Record<ModelId, string> = {
+  lgbm: 'Quantile gradient boosting',
+  xgboost: 'Gradient boosting',
   ensemble: 'Ensemble',
-  lgbm: 'LightGBM',
-  xgboost: 'XGBoost',
+  seasonal_naive: 'Seasonal-naive',
+  linear: 'Linear regression',
   prophet: 'Prophet',
   lstm: 'LSTM',
-  linear: 'Linear Regression',
-  seasonal_naive: 'Seasonal Naive (Baseline)',
 };

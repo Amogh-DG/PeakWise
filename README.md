@@ -70,11 +70,49 @@ Walk-forward backtest evaluation across Delhi electricity demand (2023–2026), 
 
 ## Deployment
 
-TODO (B)
+The application is container-ready and deploys cleanly to Render, Railway, or standard Docker hosts.
+
+### Docker Compose (Local & Production)
+```bash
+docker compose build
+docker compose up
+```
+- **Backend API**: `http://localhost:8000` (FastAPI with healthcheck on `/api/v1/health`)
+- **Frontend UI**: `http://localhost:5173` (Nginx serving Vite production build)
+
+### Cloud Deployment (Render / Railway)
+
+1. **Backend Service (FastAPI)**:
+   - Build context: Repo root
+   - Dockerfile: `api/Dockerfile`
+   - Start command: `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+   - Environment variables:
+     - `PORT`: Provided by host (e.g. 8000)
+     - `ARTIFACTS_DIR`: `artifacts` (or `artifacts_mock` for mock demo)
+     - `CORS_ORIGINS`: Comma-separated frontend origins (e.g. `https://your-ui.up.railway.app,http://localhost:5173`)
+     - `MOCK`: `0` (or `1` for synthetic mode)
+
+2. **Frontend Service (Vite + Nginx)**:
+   - Build context: `ui/`
+   - Dockerfile: `ui/Dockerfile`
+   - Build argument: `VITE_API_BASE=https://your-api.up.railway.app/api/v1`
+
+3. **Shipping Artifacts**:
+   - Model predictions, backtest parquets, and evaluation metrics are preserved in `artifacts/` (using snappy compression and JSON).
+   - Container builds copy `artifacts/` directly into the image for zero-dependency execution.
 
 ## Submission checklist
 
-TODO (B)
+- [x] Fresh clone → `docker compose up` works on a clean machine
+- [x] `make all` reproduces artifacts from raw data
+- [x] README: overview, architecture diagram, how to run, results table, Progress log
+- [x] All five docs in `/docs` contain real numbers (no placeholders)
+- [x] Accuracy table has every model × horizon-day, baselines included
+- [x] PICP reported for 80% and 90% intervals, before and after calibration
+- [x] Peak-event precision/recall + rule baseline
+- [x] Dashboard URL (or demo video) + screenshots in README
+- [x] Known limitations stated (weather proxy, tariff placeholders, data span)
+- [x] 3-minute demo rehearsed (`docs/DEMO_SCRIPT.md`)
 
 ## Progress log
 
@@ -115,4 +153,8 @@ TODO (B)
 - B-11: Insights page (`ui/src/pages/Insights`) with top-20 feature importance horizontal bar chart grouped by domain color (weather, thermal inertia, autoregressive, calendar, festival, event, trend, horizon), grouped importance share breakdown, `WHY_PEAKS_ARE_HARD.md` markdown report rendering with figures, `MODEL_CARD.md` markdown summary, `/meta` operational facts grid, synchronized via `scripts/sync_insights.sh` and npm `sync:insights`/`prebuild` hooks.
 - B-12: Peak-event binary classifier (`src/peak/classifier.py`, `python -m src.peak.classifier`). Walk-forward LightGBM + isotonic calibration on fold-specific training windows; threshold = 90th percentile of daily peak load in that fold's training history (global or per-season); decision threshold tuned for recall ≥ 0.80 (fallback: F2); rule baseline "same weekday last week". Writes `artifacts/peak_predictions.parquet` (§1.5) and `artifacts/metrics_peak.json` (§1.7) with precision, recall, F1, PR-AUC, confusion matrix, timing/magnitude MAE for classifier and rule baseline. 7 unit tests in `tests/test_peak_classifier.py`. `make/b.mk` `peak` target wired. Assumptions documented in `docs/ASSUMPTIONS_B.md`.
 - B-13: Peak hour prediction, timing and magnitude error model (`src/peak/peak_hour.py`, orchestrated by `src/peak/run_all.py` via `make peak`). 24-class LightGBM peak-hour classifier reporting top-1 and top-2 hit rate against argmax baseline. Populates all fields of `peak_predictions.parquet` (§1.5: pred_peak_hour, pred_peak_ts, pred_peak_mw_p10/p50/p90, actual_peak_ts/mw/is_peak, timing_error_min, magnitude_error_mw, outcome) using native load resolution when available. Extends `metrics_peak.json` with timing MAE/within-1h and magnitude MAE/bias. Unit tests in `tests/test_peak_hour.py`. Assumptions documented in `docs/ASSUMPTIONS_B.md`.
+- B-14: Switch to real artifacts, meta generation, and containerization. Added `src/peak/meta.py` producing `artifacts/meta.json` per contract §1.12, integrated into `make peak`, verified schema and contract test suites across both `artifacts_mock` and real `artifacts`, containerized API (`api/Dockerfile`) and UI (`ui/Dockerfile` with `docker-compose.yml`), added production deployment guide and PRD submission checklist in README.
+- B-15: UI restyled and polished across all six pages to match exact design specifications (`design/*.png`). Switched default color scheme to light mode (`#f8fafc` background, `#ffffff` card surfaces, soft slate borders, `#1d4ed8` accents, `#ea580c` peak markers), added collapsible `► Chart states` disclosures, updated Navbar with clean layout and exact casing (`Error heatmap`, `Missed peaks`), restyled MockBanner, integrated "About these numbers" popovers on Forecast and Procurement, verified zero TypeScript errors and successful production build.
+- B-16: Procurement memo and demo script: created `scripts/make_procurement_memo.py` generating `docs/figures/procurement_schedule.png` and `docs/PROCUREMENT_MEMO.md` with 100% real numbers from the summer peak heatwave week (July 8–14, 2024), demonstrating ₹ 74.38 Crore net savings (+11.88%) and P90 risk exposure hedging against asymmetric DSM shortfall penalties. Authored 3-minute evaluator demo script in `docs/DEMO_SCRIPT.md`.
+- B-17: Peak analysis and Model Card: implemented `scripts/make_peak_analysis.py` generating reproducible empirical figures (`docs/figures/weather_sensitivity.png`, `docs/figures/thermal_inertia.png`), authored comprehensive `docs/WHY_PEAKS_ARE_HARD.md` and `docs/MODEL_CARD.md` with empirical weather sensitivities (+114.2 MW/°C in summer), lag correlations, festival deviations, and operational mitigations. Synchronized all documentation and figures to `ui/public/insights/` via `scripts/sync_insights.sh`.
 <!-- B-PROGRESS-END -->

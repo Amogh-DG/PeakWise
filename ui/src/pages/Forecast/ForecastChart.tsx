@@ -52,7 +52,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
         type: 'scatter',
         mode: 'lines',
         fill: 'tonexty',
-        fillcolor: 'rgba(56, 189, 248, 0.12)',
+        fillcolor: 'rgba(219, 234, 254, 0.45)',
         line: { color: 'transparent', width: 0 },
         hoverinfo: 'skip',
       },
@@ -73,7 +73,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
         type: 'scatter',
         mode: 'lines',
         fill: 'tonexty',
-        fillcolor: 'rgba(14, 165, 233, 0.24)',
+        fillcolor: 'rgba(147, 197, 253, 0.55)',
         line: { color: 'transparent', width: 0 },
         hoverinfo: 'skip',
       },
@@ -83,7 +83,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
         y: p50Vals,
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#0284c7', width: 2.2, dash: 'dash' },
+        line: { color: '#2563eb', width: 2.2, dash: 'dash' },
         customdata: customHoverData,
         hovertemplate:
           '<b>%{x|%a %d %b, %H:%M} IST</b><br>' +
@@ -102,7 +102,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
         y: actualPoints.map((p) => p.actual),
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#f8fafc', width: 2.5 },
+        line: { color: '#0f172a', width: 2.5 },
         hovertemplate: '<b>Actual: %{y:.1f} MW</b><br>%{x|%a %d %b, %H:%M} IST<extra></extra>',
       });
     }
@@ -118,10 +118,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
           symbol: 'diamond',
           size: 11,
           color: '#0f172a',
-          line: { color: '#38bdf8', width: 2 },
         },
-        hovertemplate:
-          '<b>Predicted Daily Peak (P50)</b><br>%{x|%H:%M} IST: <b>%{y:.1f} MW</b><extra></extra>',
+        hovertemplate: '<b>Predicted Peak: %{y:.1f} MW</b><br>%{x|%H:%M} IST<extra></extra>',
       });
 
       if (data.peak.actual_peak_ts && data.peak.actual_peak_mw !== null) {
@@ -134,59 +132,9 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
           marker: {
             symbol: 'circle',
             size: 11,
-            color: '#ea580c',
-            line: { color: '#ffffff', width: 2 },
+            color: '#c2410c',
           },
-          hovertemplate:
-            '<b>Actual Daily Peak</b><br>%{x|%H:%M} IST: <b>%{y:.1f} MW</b><extra></extra>',
-        });
-      }
-    } else if ('daily_peaks' in data && data.daily_peaks) {
-      const predX: string[] = [];
-      const predY: number[] = [];
-      const actX: string[] = [];
-      const actY: number[] = [];
-
-      for (const dp of data.daily_peaks) {
-        if (dp.predicted_peak_ts) {
-          predX.push(dp.predicted_peak_ts);
-          predY.push(dp.predicted_peak_mw.p50);
-        }
-        if (dp.actual_peak_ts && dp.actual_peak_mw !== null) {
-          actX.push(dp.actual_peak_ts);
-          actY.push(dp.actual_peak_mw);
-        }
-      }
-
-      traces.push({
-        name: 'Predicted Peaks',
-        x: predX,
-        y: predY,
-        type: 'scatter',
-        mode: 'markers',
-        marker: {
-          symbol: 'diamond',
-          size: 10,
-          color: '#0f172a',
-          line: { color: '#38bdf8', width: 2 },
-        },
-        hovertemplate: '<b>Predicted Peak</b><br>%{x|%a %d %b %H:%M}: %{y:.1f} MW<extra></extra>',
-      });
-
-      if (actX.length > 0) {
-        traces.push({
-          name: 'Actual Peaks',
-          x: actX,
-          y: actY,
-          type: 'scatter',
-          mode: 'markers',
-          marker: {
-            symbol: 'circle',
-            size: 10,
-            color: '#ea580c',
-            line: { color: '#ffffff', width: 2 },
-          },
-          hovertemplate: '<b>Actual Peak</b><br>%{x|%a %d %b %H:%M}: %{y:.1f} MW<extra></extra>',
+          hovertemplate: '<b>Actual Peak: %{y:.1f} MW</b><br>%{x|%H:%M} IST<extra></extra>',
         });
       }
     }
@@ -194,153 +142,129 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, view }) => {
     return traces;
   }, [points, data]);
 
-  const shapes = useMemo(() => {
-    const list: any[] = [];
-
-    list.push({
-      type: 'line',
-      xref: 'paper',
-      x0: 0,
-      x1: 1,
-      y0: peakThreshold,
-      y1: peakThreshold,
-      line: {
-        color: '#f59e0b',
-        width: 1.5,
-        dash: 'dashdot',
-      },
-    });
-
+  const atRiskRanges = useMemo(() => {
+    if (!points || points.length === 0) return [];
+    const ranges: Array<{ start: string; end: string }> = [];
     let currentStart: string | null = null;
-    let currentEnd: string | null = null;
+    let prevTs: string | null = null;
 
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
+    points.forEach((p) => {
       if (p.at_risk) {
         if (!currentStart) currentStart = p.ts;
-        currentEnd = p.ts;
-      } else if (currentStart && currentEnd) {
-        list.push({
-          type: 'rect',
-          xref: 'x',
-          yref: 'paper',
-          x0: currentStart,
-          x1: currentEnd,
-          y0: 0,
-          y1: 1,
-          fillcolor: 'rgba(239, 68, 68, 0.12)',
-          line: { width: 0 },
-          layer: 'below',
-        });
-        currentStart = null;
-        currentEnd = null;
+        prevTs = p.ts;
+      } else {
+        if (currentStart && prevTs) {
+          ranges.push({ start: currentStart, end: prevTs });
+          currentStart = null;
+          prevTs = null;
+        }
       }
+    });
+
+    if (currentStart && prevTs) {
+      ranges.push({ start: currentStart, end: prevTs });
     }
 
-    if (currentStart && currentEnd) {
-      list.push({
+    return ranges;
+  }, [points]);
+
+  const layout = useMemo(() => {
+    const shapes: any[] = [];
+    const annotations: any[] = [];
+
+    atRiskRanges.forEach((range, idx) => {
+      shapes.push({
         type: 'rect',
         xref: 'x',
         yref: 'paper',
-        x0: currentStart,
-        x1: currentEnd,
+        x0: range.start,
+        x1: range.end,
         y0: 0,
         y1: 1,
-        fillcolor: 'rgba(239, 68, 68, 0.12)',
+        fillcolor: 'rgba(255, 237, 213, 0.7)',
         line: { width: 0 },
         layer: 'below',
       });
-    }
 
-    if (view === 'week') {
-      for (const p of points) {
-        if (p.ts.endsWith('T00:00:00+05:30')) {
-          list.push({
-            type: 'line',
-            xref: 'x',
-            yref: 'paper',
-            x0: p.ts,
-            x1: p.ts,
-            y0: 0,
-            y1: 1,
-            line: {
-              color: '#334155',
-              width: 1,
-              dash: 'dash',
-            },
-            layer: 'below',
-          });
-        }
-      }
-    }
-
-    return list;
-  }, [points, peakThreshold, view]);
-
-  const annotations = useMemo(() => {
-    const list: any[] = [
-      {
-        xref: 'paper',
-        yref: 'y',
-        x: 0.02,
-        y: peakThreshold,
-        text: `Peak threshold (${peakThreshold.toLocaleString()} MW)`,
-        showarrow: false,
-        font: { size: 10, color: '#f59e0b', family: 'JetBrains Mono, monospace' },
-        yshift: 10,
-      },
-    ];
-
-    const hasRisk = points.some((p) => p.at_risk);
-    if (hasRisk) {
-      const riskIndex = points.findIndex((p) => p.at_risk);
-      if (riskIndex >= 0) {
-        list.push({
+      if (idx === 0) {
+        annotations.push({
+          x: range.start,
+          y: 0.95,
           xref: 'x',
           yref: 'paper',
-          x: points[riskIndex].ts,
-          y: 0.95,
           text: 'At-risk hours',
           showarrow: false,
-          font: { size: 11, color: '#f87171', family: 'Plus Jakarta Sans, sans-serif' },
+          font: { size: 11, color: '#9a3412', family: 'system-ui, sans-serif' },
           xanchor: 'left',
         });
       }
+    });
+
+    if (peakThreshold && points && points.length > 0) {
+      shapes.push({
+        type: 'line',
+        xref: 'paper',
+        yref: 'y',
+        x0: 0,
+        x1: 1,
+        y0: peakThreshold,
+        y1: peakThreshold,
+        line: {
+          color: '#c2410c',
+          width: 1.5,
+          dash: 'dot',
+        },
+      });
+
+      annotations.push({
+        xref: 'paper',
+        yref: 'y',
+        x: 0.01,
+        y: peakThreshold,
+        text: 'Peak threshold',
+        showarrow: false,
+        font: { size: 11, color: '#c2410c', family: 'system-ui, sans-serif' },
+        yshift: 10,
+        xanchor: 'left',
+      });
     }
 
-    return list;
-  }, [points, peakThreshold]);
+    annotations.push({
+      xref: 'paper',
+      yref: 'paper',
+      x: -0.01,
+      y: 0.5,
+      text: 'MW',
+      showarrow: false,
+      font: { size: 12, color: '#64748b', family: 'system-ui, sans-serif' },
+      xanchor: 'right',
+      yanchor: 'middle',
+    });
 
-  const layout = useMemo(() => {
     return {
       shapes,
       annotations,
+      showlegend: false,
+      margin: { t: 25, r: 25, b: 40, l: 45 },
       xaxis: {
         type: 'date',
-        tickformat: view === 'day' ? '%H:%M' : '%d %b %H:%M',
-        hoverformat: '%a %d %b %Y %H:%M',
+        tickformat: view === 'day' ? '%H:%M' : '%a %d',
         dtick: view === 'day' ? 4 * 3600 * 1000 : 24 * 3600 * 1000,
+        gridcolor: '#f1f5f9',
+        zerolinecolor: '#f1f5f9',
+        tickfont: { size: 11, color: '#64748b' },
       },
       yaxis: {
-        title: {
-          text: 'Demand (MW)',
-          font: { size: 12, color: '#9ca3af' },
-        },
-      },
-      legend: {
-        orientation: 'h',
-        y: -0.18,
-        x: 0.0,
-        font: { size: 11, color: '#9ca3af' },
+        gridcolor: '#f1f5f9',
+        zerolinecolor: '#f1f5f9',
+        tickfont: { size: 11, color: '#64748b' },
       },
     };
-  }, [shapes, annotations, view]);
+  }, [atRiskRanges, peakThreshold, points, view]);
 
   return (
-    <div className="w-full">
-      <div className="h-[440px] w-full">
-        <PlotlyChart data={chartData} layout={layout} />
-      </div>
+    <div className="w-full h-[400px]">
+      <PlotlyChart data={chartData} layout={layout} />
     </div>
   );
 };

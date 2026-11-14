@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { PlotlyChart } from '../../components/shared/PlotlyChart';
 import { DayAheadForecastResponse } from '../../api/types';
-import { CHART_THEME } from '../../constants/theme';
 
 interface CompactDayChartProps {
   data: DayAheadForecastResponse;
@@ -19,7 +18,7 @@ export const CompactDayChart: React.FC<CompactDayChartProps> = ({ data }) => {
     const p50Vals = points.map((p) => p.p50);
     const p90Vals = points.map((p) => p.p90);
     const p95Vals = points.map((p) => p.p95);
-    const actualVals = points.map((p) => p.actual);
+    const actualPoints = points.filter((p) => p.actual !== null);
 
     const traces: any[] = [
       {
@@ -33,13 +32,13 @@ export const CompactDayChart: React.FC<CompactDayChartProps> = ({ data }) => {
         hoverinfo: 'skip',
       },
       {
-        name: 'P05–P95 (90% Interval)',
+        name: 'P05–P95',
         x: xVals,
         y: p05Vals,
         type: 'scatter',
         mode: 'lines',
         fill: 'tonexty',
-        fillcolor: CHART_THEME.bandP05P95,
+        fillcolor: 'rgba(219, 234, 254, 0.45)',
         line: { color: 'transparent', width: 0 },
         hoverinfo: 'skip',
       },
@@ -54,13 +53,13 @@ export const CompactDayChart: React.FC<CompactDayChartProps> = ({ data }) => {
         hoverinfo: 'skip',
       },
       {
-        name: 'P10–P90 (80% Interval)',
+        name: 'P10–P90',
         x: xVals,
         y: p10Vals,
         type: 'scatter',
         mode: 'lines',
         fill: 'tonexty',
-        fillcolor: CHART_THEME.bandP10P90,
+        fillcolor: 'rgba(147, 197, 253, 0.55)',
         line: { color: 'transparent', width: 0 },
         hoverinfo: 'skip',
       },
@@ -70,92 +69,165 @@ export const CompactDayChart: React.FC<CompactDayChartProps> = ({ data }) => {
         y: p50Vals,
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#38bdf8', width: 2 },
+        line: { color: '#2563eb', width: 2, dash: 'dash' },
       },
     ];
 
-    const hasActuals = points.some((p) => p.actual !== null);
-    if (hasActuals) {
+    if (actualPoints.length > 0) {
       traces.push({
         name: 'Actual Demand',
-        x: xVals,
-        y: actualVals,
-        type: 'scatter',
-        mode: 'lines+markers',
-        line: { color: '#f8fafc', width: 2 },
-        marker: { size: 4, color: '#f8fafc' },
-      });
-    }
-
-    if (peak_threshold_mw) {
-      traces.push({
-        name: 'Peak Threshold',
-        x: xVals,
-        y: xVals.map(() => peak_threshold_mw),
+        x: actualPoints.map((p) => p.ts),
+        y: actualPoints.map((p) => p.actual),
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#ef4444', width: 1.5, dash: 'dot' },
+        line: { color: '#0f172a', width: 2.2 },
       });
     }
 
-    if (peak?.predicted_peak_ts && peak.predicted_peak_mw?.p50) {
+    if (peak) {
       traces.push({
-        name: 'Pred Peak',
+        name: 'Predicted Peak',
         x: [peak.predicted_peak_ts],
         y: [peak.predicted_peak_mw.p50],
         type: 'scatter',
         mode: 'markers',
-        marker: {
-          symbol: 'diamond',
-          size: 11,
-          color: '#38bdf8',
-          line: { color: '#ffffff', width: 1.5 },
-        },
+        marker: { symbol: 'diamond', size: 9, color: '#0f172a' },
       });
-    }
 
-    if (peak?.actual_peak_ts && peak.actual_peak_mw) {
-      traces.push({
-        name: 'Actual Peak',
-        x: [peak.actual_peak_ts],
-        y: [peak.actual_peak_mw],
-        type: 'scatter',
-        mode: 'markers',
-        marker: {
-          symbol: 'star',
-          size: 13,
-          color: '#f59e0b',
-          line: { color: '#ffffff', width: 1.5 },
-        },
-      });
+      if (peak.actual_peak_ts && peak.actual_peak_mw !== null) {
+        traces.push({
+          name: 'Actual Peak',
+          x: [peak.actual_peak_ts],
+          y: [peak.actual_peak_mw],
+          type: 'scatter',
+          mode: 'markers',
+          marker: { symbol: 'circle', size: 9, color: '#c2410c' },
+        });
+      }
     }
 
     return traces;
-  }, [points, peak, peak_threshold_mw]);
+  }, [points, peak]);
+
+  const atRiskRanges = useMemo(() => {
+    if (!points || points.length === 0) return [];
+    const ranges: Array<{ start: string; end: string }> = [];
+    let currentStart: string | null = null;
+    let prevTs: string | null = null;
+
+    points.forEach((p) => {
+      if (p.at_risk) {
+        if (!currentStart) currentStart = p.ts;
+        prevTs = p.ts;
+      } else {
+        if (currentStart && prevTs) {
+          ranges.push({ start: currentStart, end: prevTs });
+          currentStart = null;
+          prevTs = null;
+        }
+      }
+    });
+
+    if (currentStart && prevTs) {
+      ranges.push({ start: currentStart, end: prevTs });
+    }
+
+    return ranges;
+  }, [points]);
 
   const layout = useMemo(() => {
+    const shapes: any[] = [];
+    const annotations: any[] = [];
+
+    atRiskRanges.forEach((range, idx) => {
+      shapes.push({
+        type: 'rect',
+        xref: 'x',
+        yref: 'paper',
+        x0: range.start,
+        x1: range.end,
+        y0: 0,
+        y1: 1,
+        fillcolor: 'rgba(255, 237, 213, 0.7)',
+        line: { width: 0 },
+        layer: 'below',
+      });
+
+      if (idx === 0) {
+        annotations.push({
+          x: range.start,
+          y: 0.95,
+          xref: 'x',
+          yref: 'paper',
+          text: 'At-risk hours',
+          showarrow: false,
+          font: { size: 9, color: '#9a3412', family: 'system-ui, sans-serif' },
+          xanchor: 'left',
+        });
+      }
+    });
+
+    if (peak_threshold_mw && points && points.length > 0) {
+      shapes.push({
+        type: 'line',
+        xref: 'paper',
+        yref: 'y',
+        x0: 0,
+        x1: 1,
+        y0: peak_threshold_mw,
+        y1: peak_threshold_mw,
+        line: { color: '#c2410c', width: 1.5, dash: 'dot' },
+      });
+
+      annotations.push({
+        xref: 'paper',
+        yref: 'y',
+        x: 0.01,
+        y: peak_threshold_mw,
+        text: 'Peak threshold',
+        showarrow: false,
+        font: { size: 9, color: '#c2410c', family: 'system-ui, sans-serif' },
+        yshift: 8,
+        xanchor: 'left',
+      });
+    }
+
+    annotations.push({
+      xref: 'paper',
+      yref: 'paper',
+      x: -0.01,
+      y: 0.5,
+      text: 'MW',
+      showarrow: false,
+      font: { size: 10, color: '#64748b', family: 'system-ui, sans-serif' },
+      xanchor: 'right',
+      yanchor: 'middle',
+    });
+
     return {
-      margin: { t: 15, r: 15, b: 35, l: 45 },
-      legend: {
-        orientation: 'h',
-        x: 0,
-        y: 1.15,
-        font: { size: 10, color: CHART_THEME.mutedColor },
-      },
+      shapes,
+      annotations,
+      showlegend: false,
+      margin: { t: 20, r: 20, b: 35, l: 35 },
       xaxis: {
+        type: 'date',
         tickformat: '%H:%M',
-        dtick: 3 * 3600 * 1000,
+        dtick: 4 * 3600 * 1000,
+        gridcolor: '#f1f5f9',
+        zerolinecolor: '#f1f5f9',
+        tickfont: { size: 10, color: '#64748b' },
       },
       yaxis: {
-        title: { text: 'MW', font: { size: 10 } },
+        gridcolor: '#f1f5f9',
+        zerolinecolor: '#f1f5f9',
+        tickfont: { size: 10, color: '#64748b' },
       },
     };
-  }, []);
+  }, [atRiskRanges, peak_threshold_mw, points]);
 
   return (
-    <div className="w-full h-64">
+    <div className="w-full h-[280px]">
       <PlotlyChart data={chartTraces} layout={layout} />
     </div>
   );
 };
-

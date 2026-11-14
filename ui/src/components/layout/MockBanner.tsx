@@ -21,17 +21,10 @@ export const MockBanner: React.FC = () => {
   if (!isMock) return null;
 
   return (
-    <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-300 px-4 py-2 text-xs font-mono flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        <span className="font-semibold tracking-wide uppercase">Mock Mode Active</span>
-        <span className="text-amber-400/80 hidden sm:inline">
-          — Backend is serving synthetic artifacts (artifacts_mock).
-        </span>
+    <div className="bg-[#fef3c7] border-b border-[#fde68a] text-[#92400e] text-sm px-8 py-2.5">
+      <div className="max-w-[1440px] mx-auto">
+        The API is serving mock data. Numbers below are illustrative.
       </div>
-      <span className="text-[11px] bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded">
-        MOCK=1
-      </span>
     </div>
   );
 };

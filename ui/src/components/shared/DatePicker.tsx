@@ -49,7 +49,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         max={max || undefined}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="bg-brand-surface text-brand-text border border-brand-border rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent disabled:opacity-50 cursor-pointer"
+        className="bg-white text-slate-800 border border-slate-300 rounded-lg px-3.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 cursor-pointer"
       />
     </div>
   );

@@ -73,7 +73,7 @@ def build_heatmap(pred_df: pd.DataFrame) -> list[dict]:
     pred_df["_season"] = pred_df["target_ts"].dt.month.map(season_of)
 
     models = pred_df["model"].unique().tolist()
-    horizon_days_to_use: list[int | str] = list(HORIZON_DAYS) + ["all"]
+    horizon_days_to_use: list[int | str] = [1, "all"]
 
     cells = []
     for model in models:

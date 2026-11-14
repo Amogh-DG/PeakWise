@@ -27,7 +27,7 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
       plot_bgcolor: 'transparent',
       font: {
         color: CHART_THEME.textColor,
-        family: 'Plus Jakarta Sans, system-ui, sans-serif',
+        family: 'system-ui, -apple-system, sans-serif',
       },
       margin: {
         t: 20,
@@ -40,7 +40,7 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
         gridcolor: CHART_THEME.gridColor,
         zerolinecolor: CHART_THEME.gridColor,
         tickfont: {
-          family: 'JetBrains Mono, monospace',
+          family: 'system-ui, -apple-system, sans-serif',
           size: 11,
           color: CHART_THEME.mutedColor,
         },
@@ -50,7 +50,7 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
         gridcolor: CHART_THEME.gridColor,
         zerolinecolor: CHART_THEME.gridColor,
         tickfont: {
-          family: 'JetBrains Mono, monospace',
+          family: 'system-ui, -apple-system, sans-serif',
           size: 11,
           color: CHART_THEME.mutedColor,
         },

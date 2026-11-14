@@ -1,4 +1,3 @@
-import ctypes
 import warnings
 from pathlib import Path
 
@@ -10,77 +9,6 @@ from src.backtest.registry import register
 from src.common import constants, paths
 from src.models.quantile_utils import sort_quantiles
 from src.models.training_table import build_features_for_origin, build_training_table
-
-lgb.basic._LIB.LGBM_DatasetSetField.argtypes = [
-    ctypes.c_void_p,
-    ctypes.c_char_p,
-    ctypes.c_void_p,
-    ctypes.c_int,
-    ctypes.c_int,
-]
-lgb.basic._LIB.LGBM_DatasetSetField.restype = ctypes.c_int
-
-lgb.basic._LIB.LGBM_DatasetCreateFromMat.argtypes = [
-    ctypes.c_void_p,
-    ctypes.c_int,
-    ctypes.c_int32,
-    ctypes.c_int32,
-    ctypes.c_int,
-    ctypes.c_char_p,
-    ctypes.c_void_p,
-    ctypes.POINTER(ctypes.c_void_p),
-]
-lgb.basic._LIB.LGBM_DatasetCreateFromMat.restype = ctypes.c_int
-
-lgb.basic._LIB.LGBM_DatasetFree.argtypes = [ctypes.c_void_p]
-lgb.basic._LIB.LGBM_DatasetFree.restype = ctypes.c_int
-
-lgb.basic._LIB.LGBM_BoosterFree.argtypes = [ctypes.c_void_p]
-lgb.basic._LIB.LGBM_BoosterFree.restype = ctypes.c_int
-
-
-def _safe_dataset_set_field(self, field_name, data):
-    if not self._handle or getattr(self._handle, "value", None) is None:
-        raise ValueError(f"Cannot set {field_name} before construct dataset")
-    if data is None:
-        lgb.basic._safe_call(
-            lgb.basic._LIB.LGBM_DatasetSetField(
-                self._handle,
-                lgb.basic._c_str(field_name),
-                None,
-                ctypes.c_int(0),
-                ctypes.c_int(lgb.basic._FIELD_TYPE_MAPPER[field_name]),
-            )
-        )
-        return self
-    dtype = (
-        np.float64
-        if field_name == "init_score"
-        else (np.int32 if field_name in {"group", "position"} else np.float32)
-    )
-    data = lgb.basic._list_to_1d_numpy(data=data, dtype=dtype, name=field_name)
-    if data.dtype in (np.float32, np.float64):
-        ptr_data, type_data, keep = lgb.basic._c_float_array(data)
-    elif data.dtype == np.int32:
-        ptr_data, type_data, keep = lgb.basic._c_int_array(data)
-    else:
-        raise TypeError("Expected np.float32/64 or np.int32")
-    if not hasattr(self, "_keep_refs"):
-        self._keep_refs = []
-    self._keep_refs.append((ptr_data, keep))
-    lgb.basic._safe_call(
-        lgb.basic._LIB.LGBM_DatasetSetField(
-            self._handle,
-            lgb.basic._c_str(field_name),
-            ptr_data,
-            ctypes.c_int(len(data)),
-            ctypes.c_int(type_data),
-        )
-    )
-    return self
-
-
-lgb.basic.Dataset.set_field = _safe_dataset_set_field
 
 
 def get_load_path() -> Path:

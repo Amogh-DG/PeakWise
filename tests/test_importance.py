@@ -1,8 +1,8 @@
+import lightgbm as lgb
 import json
 import numpy as np
 import pandas as pd
 import pytest
-import lightgbm as lgb
 
 from src.common import paths
 from src.models.feature_groups import FEATURE_GROUPS, group_of

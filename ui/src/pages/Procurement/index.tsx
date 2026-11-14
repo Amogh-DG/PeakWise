@@ -1,12 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ModelSelect } from '../../components/shared/ModelSelect';
-import { DatePicker } from '../../components/shared/DatePicker';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChartCard } from '../../components/shared/ChartCard';
-import { StatTile } from '../../components/shared/StatTile';
 import { TariffForm } from './TariffForm';
 import { ScheduleChart } from './ScheduleChart';
 import { CostRiskChart } from './CostRiskChart';
-import { formatINR, formatMW, formatMWh, formatPct } from './formatters';
+import { formatINR } from './formatters';
 import {
   getProcurementDefaults,
   getProcurementRecommendation,
@@ -20,19 +17,19 @@ import { DEFAULT_MODEL } from '../../constants/models';
 const RISK_CURVE_QUANTILES = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99];
 
 export const ProcurementPage: React.FC = () => {
-  const [model, setModel] = useState<string>(DEFAULT_MODEL);
-  const [startDate, setStartDate] = useState<string>('2024-06-08');
-  const [days, setDays] = useState<number>(7);
+  const model = DEFAULT_MODEL;
+  const [weekInput, setWeekInput] = useState<string>('2026-W46');
+  const startDate = '2024-06-08';
+  const days = 7;
   const [riskQuantile, setRiskQuantile] = useState<number>(0.9);
   const [useNewsvendor, setUseNewsvendor] = useState<boolean>(false);
-  const [formatUnit, setFormatUnit] = useState<'compact' | 'full'>('compact');
+  const [showAbout, setShowAbout] = useState<boolean>(false);
 
   const [tariff, setTariff] = useState<ProcurementTariff>({
     da_price_inr_per_mwh: 5000,
     under_price_inr_per_mwh: 12000,
     resale_price_inr_per_mwh: 2500,
   });
-  const [defaultTariff, setDefaultTariff] = useState<ProcurementTariff | null>(null);
   const [disclaimer, setDisclaimer] = useState<string>('');
 
   const [recommendation, setRecommendation] = useState<ProcurementResponse | null>(null);
@@ -42,7 +39,6 @@ export const ProcurementPage: React.FC = () => {
   const [riskCurvePoints, setRiskCurvePoints] = useState<
     Array<{ quantile: number; value: number; isExposure: boolean }>
   >([]);
-  const [loadingCurve, setLoadingCurve] = useState<boolean>(false);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -51,7 +47,6 @@ export const ProcurementPage: React.FC = () => {
     getProcurementDefaults()
       .then((res) => {
         if (active) {
-          setDefaultTariff(res.tariff);
           setTariff(res.tariff);
           setDisclaimer(res.disclaimer);
           if (res.default_risk_quantile) {
@@ -66,23 +61,7 @@ export const ProcurementPage: React.FC = () => {
     };
   }, []);
 
-  const isTariffValid = useMemo(() => {
-    return (
-      tariff.under_price_inr_per_mwh > tariff.da_price_inr_per_mwh &&
-      tariff.da_price_inr_per_mwh > tariff.resale_price_inr_per_mwh &&
-      tariff.resale_price_inr_per_mwh >= 0
-    );
-  }, [tariff]);
-
   useEffect(() => {
-    if (!isTariffValid) {
-      setError(
-        'Tariff configuration error: Shortfall Price must exceed Day-Ahead Price, which must exceed Resale Price (Shortfall > DA > Resale ≥ 0).'
-      );
-      setLoading(false);
-      return;
-    }
-
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -108,16 +87,9 @@ export const ProcurementPage: React.FC = () => {
         .catch((err) => {
           setRecommendation(null);
           setLoading(false);
-          if (err.code === 'BAD_PARAMETER') {
-            setError(`Invalid Parameter: ${err.message || 'Check days, risk quantile, or tariff values.'}`);
-          } else if (err.code === 'DATE_OUT_OF_RANGE') {
-            setError(`Date Out of Range: ${startDate} is outside the backtest evaluation range.`);
-          } else {
-            setError(err.message || 'Failed to calculate procurement recommendation.');
-          }
+          setError(err.message || 'Failed to calculate procurement recommendation.');
         });
 
-      setLoadingCurve(true);
       const curvePromises = RISK_CURVE_QUANTILES.map((q) =>
         getProcurementRecommendation({
           start_date: startDate,
@@ -141,11 +113,8 @@ export const ProcurementPage: React.FC = () => {
         .then((pts) => {
           const valid = pts.filter((p): p is { quantile: number; value: number; isExposure: boolean } => p !== null);
           setRiskCurvePoints(valid);
-          setLoadingCurve(false);
         })
-        .catch(() => {
-          setLoadingCurve(false);
-        });
+        .catch(() => {});
     }, 300);
 
     return () => {
@@ -153,277 +122,204 @@ export const ProcurementPage: React.FC = () => {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [startDate, days, model, riskQuantile, useNewsvendor, tariff, isTariffValid]);
+  }, [startDate, days, model, riskQuantile, useNewsvendor, tariff]);
 
   const summary = recommendation?.summary;
-  const isActualAvailable = summary?.cost_inr !== null && summary?.cost_inr !== undefined;
+
+  const costDisplay = summary?.cost_inr !== null && summary?.cost_inr !== undefined
+    ? formatINR(summary.cost_inr, 'compact')
+    : '[COST]';
+
+  const savingsDisplay = summary?.savings_inr !== null && summary?.savings_inr !== undefined
+    ? formatINR(summary.savings_inr, 'compact')
+    : '[SAVED]';
+
+  const exposureDisplay = summary?.p90_risk_exposure_inr !== null && summary?.p90_risk_exposure_inr !== undefined
+    ? formatINR(summary.p90_risk_exposure_inr, 'compact')
+    : '[EXPOSURE]';
+
+  const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const byDayList = daysLabels.map((dayName, idx) => {
+    const dayData = recommendation?.by_day?.[idx];
+    const daySavings =
+      dayData && dayData.flat_cost_inr !== null && dayData.cost_inr !== null
+        ? formatINR(dayData.flat_cost_inr - dayData.cost_inr, 'compact')
+        : '[SAVED]';
+
+    return {
+      day: dayName,
+      volume: dayData?.scheduled_mwh ? `${Math.round(dayData.scheduled_mwh).toLocaleString()} MWh` : '[MWh]',
+      cost: dayData?.cost_inr !== null && dayData?.cost_inr !== undefined ? formatINR(dayData.cost_inr, 'compact') : '[COST]',
+      savings: daySavings,
+    };
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-brand-border">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-brand-text">
-            Procurement Copilot
-          </h1>
-          <p className="text-xs text-brand-muted mt-1">
-            Asymmetric loss optimization, newsvendor dispatch quantiles, and DISCOM cost hedging.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-6">
+          Procurement
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2 bg-brand-surface border border-brand-border rounded-lg p-1">
-            <span className="text-xs font-semibold text-brand-muted px-2">Display:</span>
-            <button
-              type="button"
-              onClick={() => setFormatUnit('compact')}
-              className={`text-xs px-2.5 py-1 rounded font-medium transition-colors ${
-                formatUnit === 'compact'
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'text-brand-muted hover:text-brand-text'
-              }`}
-            >
-              Cr / L
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormatUnit('full')}
-              className={`text-xs px-2.5 py-1 rounded font-medium transition-colors ${
-                formatUnit === 'full'
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'text-brand-muted hover:text-brand-text'
-              }`}
-            >
-              Full ₹
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-brand-surface border border-brand-border rounded-xl p-5 shadow-sm space-y-5">
-          <h3 className="text-sm font-bold text-brand-text border-b border-brand-border pb-2">
-            Schedule Parameters
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider block">
-                Start Date
-              </label>
-              <DatePicker value={startDate} onChange={setStartDate} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider block">
-                Horizon Span
-              </label>
-              <select
-                value={days}
-                onChange={(e) => setDays(parseInt(e.target.value, 10))}
-                className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-accent/50 cursor-pointer"
-              >
-                {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                  <option key={d} value={d}>
-                    {d} Day{d > 1 ? 's' : ''} ({d * 24} Hours)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider block">
-                Forecast Model
-              </label>
-              <ModelSelect value={model} onChange={setModel} />
-            </div>
+        <div className="flex flex-wrap items-end gap-6">
+          <div className="flex flex-col">
+            <label className="text-xs text-slate-600 mb-1.5 font-normal">
+              Week
+            </label>
+            <input
+              type="text"
+              value={weekInput}
+              onChange={(e) => setWeekInput(e.target.value)}
+              className="bg-white text-slate-800 border border-slate-300 rounded-lg px-3.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[160px]"
+            />
           </div>
 
-          <div className="pt-2 border-t border-brand-border/60 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">
-                Risk Quantile Selection: <span className="font-mono text-sky-400">P{Math.round(riskQuantile * 100)}</span> ({riskQuantile.toFixed(2)})
-              </label>
-
-              <label className="inline-flex items-center space-x-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={useNewsvendor}
-                  onChange={(e) => setUseNewsvendor(e.target.checked)}
-                  className="rounded border-brand-border bg-brand-bg text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer"
-                />
-                <span className="text-xs font-medium text-brand-text">
-                  Use Newsvendor Optimum
-                  {recommendation?.newsvendor_quantile && (
-                    <span className="font-mono text-emerald-400 ml-1">
-                      (q = {recommendation.newsvendor_quantile.toFixed(3)})
-                    </span>
-                  )}
-                </span>
-              </label>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-mono text-brand-muted">0.50</span>
+          <div className="flex flex-col">
+            <label className="text-xs text-slate-600 mb-1.5 font-normal">
+              Risk quantile: P{Math.round(riskQuantile * 100)}
+            </label>
+            <div className="flex items-center h-10 px-3 bg-white border border-slate-300 rounded-lg min-w-[160px]">
               <input
                 type="range"
-                min="0.50"
+                min="0.5"
                 max="0.99"
                 step="0.01"
                 value={riskQuantile}
                 disabled={useNewsvendor}
                 onChange={(e) => setRiskQuantile(parseFloat(e.target.value))}
-                className="w-full accent-sky-500 cursor-pointer disabled:opacity-40"
+                className="w-full accent-blue-600 cursor-pointer"
               />
-              <span className="text-xs font-mono text-brand-muted">0.99</span>
             </div>
-            <div className="text-[11px] text-brand-muted flex justify-between">
-              <span>Higher Risk (Under-procurement penalty)</span>
-              <span>Conservative Hedge (Surplus salvage risk)</span>
+          </div>
+
+          <div className="flex items-center pb-2.5 space-x-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={useNewsvendor}
+              onClick={() => setUseNewsvendor(!useNewsvendor)}
+              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors ${
+                useNewsvendor ? 'bg-[#1d4ed8]' : 'bg-slate-300'
+              }`}
+            >
+              <span
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                  useNewsvendor ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-slate-700 font-normal">
+              Newsvendor optimum
+            </span>
+          </div>
+
+          <div className="flex items-center pb-2">
+            <button
+              type="button"
+              onClick={() => setShowAbout(!showAbout)}
+              className="text-sm text-[#1d4ed8] hover:underline flex items-center gap-1 cursor-pointer font-normal"
+            >
+              <span>{showAbout ? '▼' : '►'}</span>
+              <span>About these numbers</span>
+            </button>
+          </div>
+        </div>
+
+        {showAbout && (
+          <div className="mt-4 p-5 rounded-2xl bg-white border border-slate-200 text-xs text-slate-600 shadow-sm space-y-2">
+            <p className="text-slate-900 font-semibold">Tariff Caveats & Newsvendor Dispatch</p>
+            <p>
+              {disclaimer ||
+                'Illustrative placeholder values, not actual DISCOM tariffs. See docs/ASSUMPTIONS.md.'}
+            </p>
+            <p>
+              Newsvendor quantile = (under - da) / (under - resale). Optimal economic dispatch under asymmetric shortage penalty.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <span className="text-xs text-slate-500 font-normal block mb-2">Expected cost</span>
+          <div className="text-3xl font-bold tracking-tight text-slate-900">{costDisplay}</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <span className="text-xs text-slate-500 font-normal block mb-2">Savings</span>
+          <div className="text-3xl font-bold tracking-tight text-slate-900">{savingsDisplay}</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <span className="text-xs text-slate-500 font-normal block mb-2">P90 exposure</span>
+          <div className="text-3xl font-bold tracking-tight text-slate-900">{exposureDisplay}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="lg:col-span-7">
+          <ChartCard
+            title="Schedule"
+            loading={loading}
+            error={error}
+            empty={!recommendation}
+            className="h-full"
+          >
+            {recommendation && <ScheduleChart schedule={recommendation.schedule} />}
+          </ChartCard>
+        </div>
+
+        <div className="lg:col-span-5">
+          <TariffForm
+            tariff={tariff}
+            onChange={setTariff}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="lg:col-span-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm h-full">
+            <h3 className="text-base font-bold text-slate-900 mb-4">Per day</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="border-b border-slate-200 text-xs text-slate-700 font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-3">Day</th>
+                    <th className="py-2.5 px-3">Volume</th>
+                    <th className="py-2.5 px-3">Cost</th>
+                    <th className="py-2.5 px-3 text-right">Savings</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-800">
+                  {byDayList.map((row) => (
+                    <tr key={row.day} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-2.5 px-3 font-medium text-slate-900">{row.day}</td>
+                      <td className="py-2.5 px-3 text-slate-700">{row.volume}</td>
+                      <td className="py-2.5 px-3 text-slate-700">{row.cost}</td>
+                      <td className="py-2.5 px-3 text-right text-slate-700 font-medium">
+                        {row.savings}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <div>
-          <TariffForm
-            tariff={tariff}
-            onChange={setTariff}
-            defaultTariff={defaultTariff}
-            disclaimer={disclaimer}
-            disabled={loading}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatTile
-          label="Realised Cost"
-          value={formatINR(summary?.cost_inr, formatUnit)}
-          subtitle={
-            isActualAvailable
-              ? `Scheduled: ${formatMWh(summary?.total_scheduled_mwh)}`
-              : 'Actuals pending observation'
-          }
-        />
-        <StatTile
-          label="Flat Baseline Cost"
-          value={formatINR(summary?.flat_cost_inr, formatUnit)}
-          subtitle={
-            recommendation?.baseline?.flat_mw
-              ? `Ref: ${formatMW(recommendation.baseline.flat_mw)}`
-              : 'Previous week average'
-          }
-        />
-        <StatTile
-          label="Estimated Savings"
-          value={formatINR(summary?.savings_inr, formatUnit)}
-          delta={formatPct(summary?.savings_pct)}
-          deltaType={summary?.savings_inr && summary.savings_inr >= 0 ? 'positive' : 'negative'}
-          subtitle="vs Fixed Flat Baseload"
-        />
-        <StatTile
-          label="P90 Risk Exposure"
-          value={formatINR(summary?.p90_risk_exposure_inr, formatUnit)}
-          subtitle="Shortfall risk if P90 hits"
-        />
-        <StatTile
-          label="Procurement Accuracy"
-          value={
-            summary?.under_procured_hours !== null && summary?.under_procured_hours !== undefined
-              ? `${summary.under_procured_hours}h under / ${summary.over_procured_hours}h over`
-              : 'Pending actual load'
-          }
-          subtitle={`Total: ${days * 24} Schedule Hours`}
-        />
-      </div>
-
-      <ChartCard
-        title="Optimal Day-Ahead Purchase Schedule vs Baselines"
-        subtitle={`Hourly dispatch schedule for ${startDate} to ${recommendation?.end_date || '...'} (${days * 24} hours). Highlighted markers indicate at-risk peak hours.`}
-        loading={loading}
-        error={error}
-        empty={!recommendation}
-      >
-        {recommendation && (
-          <ScheduleChart
-            schedule={recommendation.schedule}
-            atRiskHours={recommendation.summary.at_risk_hours}
-          />
-        )}
-      </ChartCard>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCard
-          title="Daily Dispatch & Cost Breakdown"
-          subtitle="Aggregated daily volume, peak capacity, and cost comparison."
-          empty={!recommendation || recommendation.by_day.length === 0}
-        >
-          {recommendation && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-brand-border text-brand-muted uppercase tracking-wider font-semibold">
-                    <th className="py-2.5 px-3">Date</th>
-                    <th className="py-2.5 px-3">Volume</th>
-                    <th className="py-2.5 px-3">Peak Sched</th>
-                    <th className="py-2.5 px-3 text-right">Realised Cost</th>
-                    <th className="py-2.5 px-3 text-right">Flat Cost</th>
-                    <th className="py-2.5 px-3 text-right">Savings</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brand-border/60 font-mono">
-                  {recommendation.by_day.map((d) => {
-                    const dailySavings =
-                      d.flat_cost_inr !== null && d.cost_inr !== null
-                        ? d.flat_cost_inr - d.cost_inr
-                        : null;
-                    return (
-                      <tr key={d.date} className="hover:bg-brand-surface-secondary/40 transition-colors">
-                        <td className="py-2.5 px-3 font-sans font-medium text-brand-text">
-                          {d.date}
-                        </td>
-                        <td className="py-2.5 px-3 text-brand-text">{formatMWh(d.scheduled_mwh)}</td>
-                        <td className="py-2.5 px-3 text-amber-400">{formatMW(d.peak_scheduled_mw)}</td>
-                        <td className="py-2.5 px-3 text-right text-brand-text">
-                          {formatINR(d.cost_inr, formatUnit)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-brand-muted">
-                          {formatINR(d.flat_cost_inr, formatUnit)}
-                        </td>
-                        <td
-                          className={`py-2.5 px-3 text-right font-semibold ${
-                            dailySavings && dailySavings >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}
-                        >
-                          {formatINR(dailySavings, formatUnit)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="lg:col-span-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm h-full flex flex-col justify-between">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Cost against risk</h3>
+              <CostRiskChart
+                points={riskCurvePoints}
+                currentQuantile={riskQuantile}
+              />
             </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Cost vs Risk Quantile Frontier"
-          subtitle="Simulated cost curve evaluated across quantiles {0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99}."
-          loading={loadingCurve}
-          empty={riskCurvePoints.length === 0}
-        >
-          {riskCurvePoints.length > 0 && recommendation && (
-            <CostRiskChart
-              points={riskCurvePoints}
-              currentQuantile={recommendation.risk_quantile}
-              newsvendorQuantile={recommendation.newsvendor_quantile}
-              isExposureOnly={!isActualAvailable}
-              formatUnit={formatUnit}
-            />
-          )}
-        </ChartCard>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-
-export default ProcurementPage;

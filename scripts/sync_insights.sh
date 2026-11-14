@@ -14,9 +14,7 @@ if [ -f "${ROOT_DIR}/docs/MODEL_CARD.md" ]; then
   cp "${ROOT_DIR}/docs/MODEL_CARD.md" "${TARGET_DIR}/"
 fi
 
-if compgen -G "${ROOT_DIR}/docs/figures/*.png" > /dev/null; then
-  cp "${ROOT_DIR}"/docs/figures/*.png "${TARGET_DIR}/"
-fi
+mkdir -p "${ROOT_DIR}/docs/figures"
+cp "${ROOT_DIR}"/docs/figures/*.png "${TARGET_DIR}/" 2>/dev/null || true
 
 exit 0
-

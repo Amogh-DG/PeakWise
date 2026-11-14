@@ -1,28 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ModelSelect } from '../../components/shared/ModelSelect';
+import React, { useEffect, useState } from 'react';
 import { ChartCard } from '../../components/shared/ChartCard';
-import { StatTile } from '../../components/shared/StatTile';
 import { HeatmapPlot } from './HeatmapPlot';
 import { getErrorHeatmap } from '../../api/client';
 import { ErrorHeatmapResponse } from '../../api/types';
-import { DEFAULT_MODEL, BASELINE_MODEL } from '../../constants/models';
-
-const PEAK_HOURS = [6, 7, 8, 9, 10, 19, 20, 21, 22, 23];
-
-const HORIZON_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: 'D+1', value: '1' },
-  { label: 'D+2', value: '2' },
-  { label: 'D+3', value: '3' },
-  { label: 'D+4', value: '4' },
-  { label: 'D+5', value: '5' },
-  { label: 'D+6', value: '6' },
-  { label: 'D+7', value: '7' },
-  { label: 'All Horizons', value: 'all' },
-];
+import { DEFAULT_MODEL } from '../../constants/models';
 
 export const ErrorHeatmapPage: React.FC = () => {
-  const [model, setModel] = useState<string>(DEFAULT_MODEL);
-  const [compareModel, setCompareModel] = useState<string>(BASELINE_MODEL);
+  const model = DEFAULT_MODEL;
+  const compareModel = 'seasonal_naive';
   const [isCompareMode, setIsCompareMode] = useState<boolean>(false);
   const [metric, setMetric] = useState<'mape' | 'rmse' | 'bias'>('mape');
   const [horizonDay, setHorizonDay] = useState<string>('1');
@@ -61,11 +46,7 @@ export const ErrorHeatmapPage: React.FC = () => {
       })
       .catch((err) => {
         if (active) {
-          setError(
-            err.code === 'NOT_FOUND'
-              ? `Error heatmap not found for model '${model}', metric '${metric.toUpperCase()}', and horizon '${horizonDay}'. Try choosing Horizon D+1 or All Horizons.`
-              : err.message || 'Failed to load heatmap data'
-          );
+          setError(err.message || 'Failed to load heatmap data');
           setHeatmapData(null);
           setCompareData(null);
           setLoading(false);
@@ -77,309 +58,108 @@ export const ErrorHeatmapPage: React.FC = () => {
     };
   }, [model, compareModel, isCompareMode, metric, horizonDay]);
 
-  const { sharedMin, sharedMax } = useMemo(() => {
-    let min = Infinity;
-    let max = -Infinity;
-
-    const scanData = (d: ErrorHeatmapResponse | null) => {
-      if (!d) return;
-      for (const row of d.values) {
-        for (const val of row) {
-          if (val !== null && val !== undefined) {
-            if (val < min) min = val;
-            if (val > max) max = val;
-          }
-        }
-      }
-    };
-
-    scanData(heatmapData);
-    if (isCompareMode) {
-      scanData(compareData);
-    }
-
-    return {
-      sharedMin: min === Infinity ? 0 : min,
-      sharedMax: max === -Infinity ? 10 : max,
-    };
-  }, [heatmapData, compareData, isCompareMode]);
-
-  const callouts = useMemo(() => {
-    if (!heatmapData || !heatmapData.values.length) return null;
-
-    let worst = {
-      val: -Infinity,
-      absVal: -Infinity,
-      season: '',
-      hour: 0,
-      count: 0,
-    };
-    let best = {
-      val: Infinity,
-      absVal: Infinity,
-      season: '',
-      hour: 0,
-      count: 0,
-    };
-
-    let peakSum = 0;
-    let peakCount = 0;
-    let offPeakSum = 0;
-    let offPeakCount = 0;
-
-    for (let r = 0; r < heatmapData.values.length; r++) {
-      const season = heatmapData.seasons[r];
-      for (let c = 0; c < heatmapData.values[r].length; c++) {
-        const val = heatmapData.values[r][c];
-        const count = heatmapData.counts[r]?.[c] ?? 0;
-        const hour = heatmapData.hours[c];
-
-        if (val !== null && val !== undefined) {
-          const absVal = Math.abs(val);
-
-          if (metric === 'bias') {
-            if (absVal > worst.absVal) {
-              worst = { val, absVal, season, hour, count };
-            }
-            if (absVal < best.absVal) {
-              best = { val, absVal, season, hour, count };
-            }
-          } else {
-            if (val > worst.val) {
-              worst = { val, absVal, season, hour, count };
-            }
-            if (val < best.val) {
-              best = { val, absVal, season, hour, count };
-            }
-          }
-
-          const targetMetricVal = metric === 'bias' ? absVal : val;
-          if (PEAK_HOURS.includes(hour)) {
-            peakSum += targetMetricVal;
-            peakCount += 1;
-          } else {
-            offPeakSum += targetMetricVal;
-            offPeakCount += 1;
-          }
-        }
-      }
-    }
-
-    const peakAvg = peakCount > 0 ? peakSum / peakCount : 0;
-    const offPeakAvg = offPeakCount > 0 ? offPeakSum / offPeakCount : 0;
-    const peakDiffPct = offPeakAvg > 0 ? ((peakAvg - offPeakAvg) / offPeakAvg) * 100 : 0;
-
-    const unit = metric === 'mape' ? '%' : 'MW';
-    const seasonCapitalized = (s: string) =>
-      s.charAt(0).toUpperCase() + s.slice(1).replace('_', '-');
-
-    const worstText =
-      worst.season === 'summer' && worst.hour >= 18
-        ? `Summer evenings (${worst.hour}:00 IST) are the hardest to forecast (${worst.val.toFixed(1)} ${unit}), mostly because of cooling demand that swings rapidly with weather spikes.`
-        : `${seasonCapitalized(worst.season)} at hour ${worst.hour}:00 IST exhibits the highest error (${worst.val.toFixed(1)} ${unit}) across ${worst.count} observations.`;
-
-    const bestText =
-      best.season === 'winter' && best.hour <= 5
-        ? `Winter early mornings (${best.hour}:00 IST) are the easiest (${best.val.toFixed(1)} ${unit}): base load demand is low, steady, and less sensitive to temperature.`
-        : `${seasonCapitalized(best.season)} at hour ${best.hour}:00 IST achieves the lowest error (${best.val.toFixed(1)} ${unit}), showing predictable load patterns.`;
-
-    return {
-      worst,
-      best,
-      worstText,
-      bestText,
-      peakAvg,
-      offPeakAvg,
-      peakDiffPct,
-      unit,
-      worstSeason: seasonCapitalized(worst.season),
-      bestSeason: seasonCapitalized(best.season),
-    };
-  }, [heatmapData, metric]);
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 pb-4 border-b border-brand-border">
-        <h1 className="text-3xl font-extrabold tracking-tight text-brand-text">
-          Error Heatmap
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-6">
+          Error heatmap
         </h1>
 
-        <div className="flex flex-wrap items-end gap-5">
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-col">
+            <label className="text-xs text-slate-600 mb-1.5 font-normal">
               Metric
             </label>
-            <div className="inline-flex rounded-lg border border-brand-border bg-brand-surface p-0.5">
-              {(['mape', 'rmse', 'bias'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMetric(m)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold font-mono uppercase tracking-wider transition-all ${
-                    metric === m
-                      ? 'bg-sky-600 text-white shadow-sm'
-                      : 'text-brand-muted hover:text-brand-text'
-                  }`}
-                >
-                  {m.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <select
+              value={metric}
+              onChange={(e) => setMetric(e.target.value as 'mape' | 'rmse' | 'bias')}
+              className="bg-white text-slate-800 border border-slate-300 rounded-lg px-3.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer min-w-[120px]"
+            >
+              <option value="mape">MAPE</option>
+              <option value="rmse">RMSE</option>
+              <option value="bias">Bias</option>
+            </select>
           </div>
 
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">
+          <div className="flex flex-col">
+            <label className="text-xs text-slate-600 mb-1.5 font-normal">
               Horizon
             </label>
             <select
               value={horizonDay}
               onChange={(e) => setHorizonDay(e.target.value)}
-              className="bg-brand-surface text-brand-text border border-brand-border rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-accent/50 cursor-pointer"
+              className="bg-white text-slate-800 border border-slate-300 rounded-lg px-3.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer min-w-[120px]"
             >
-              {HORIZON_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
+              <option value="1">D+1</option>
+              <option value="2">D+2</option>
+              <option value="3">D+3</option>
+              <option value="4">D+4</option>
+              <option value="5">D+5</option>
+              <option value="6">D+6</option>
+              <option value="7">D+7</option>
+              <option value="all">All</option>
             </select>
           </div>
 
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">
-              {isCompareMode ? 'Model 1' : 'Model'}
-            </label>
-            <ModelSelect value={model} onChange={setModel} />
-          </div>
-
-          {isCompareMode && (
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">
-                Model 2
-              </label>
-              <ModelSelect value={compareModel} onChange={setCompareModel} />
-            </div>
-          )}
-
-          <div className="flex items-center space-x-2 pb-2">
-            <label className="inline-flex items-center space-x-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={isCompareMode}
-                onChange={(e) => setIsCompareMode(e.target.checked)}
-                className="rounded border-brand-border bg-brand-surface text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer"
+          <div className="flex items-center pb-2.5 space-x-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isCompareMode}
+              onClick={() => setIsCompareMode(!isCompareMode)}
+              className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors ${
+                isCompareMode ? 'bg-[#1d4ed8]' : 'bg-slate-300'
+              }`}
+            >
+              <span
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                  isCompareMode ? 'translate-x-4' : 'translate-x-0'
+                }`}
               />
-              <span className="text-xs font-medium text-brand-text">
-                Compare two models
-              </span>
-            </label>
+            </button>
+            <span className="text-sm text-slate-700 font-normal">
+              Compare two models
+            </span>
           </div>
         </div>
       </div>
 
-      {callouts && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatTile
-            label="Worst Segment"
-            value={`${callouts.worstSeason} ${callouts.worst.hour}:00`}
-            delta={`${callouts.worst.val.toFixed(1)} ${callouts.unit}`}
-            deltaType="negative"
-            subtitle="Highest observed forecast error"
-          />
-          <StatTile
-            label="Best Segment"
-            value={`${callouts.bestSeason} ${callouts.best.hour}:00`}
-            delta={`${callouts.best.val.toFixed(1)} ${callouts.unit}`}
-            deltaType="positive"
-            subtitle="Lowest observed forecast error"
-          />
-          <StatTile
-            label="Peak Hours Avg"
-            value={`${callouts.peakAvg.toFixed(1)}`}
-            unit={callouts.unit}
-            subtitle="Hours 06–10 and 19–23"
-          />
-          <StatTile
-            label="Peak vs Off-Peak"
-            value={`${callouts.peakDiffPct >= 0 ? '+' : ''}${callouts.peakDiffPct.toFixed(1)}%`}
-            delta={callouts.peakDiffPct >= 0 ? 'Higher peak error' : 'Lower peak error'}
-            deltaType={callouts.peakDiffPct >= 0 ? 'negative' : 'positive'}
-            subtitle={`Off-peak avg: ${callouts.offPeakAvg.toFixed(1)} ${callouts.unit}`}
-          />
-        </div>
-      )}
-
       <ChartCard
         title="Error by hour of day and season"
-        subtitle={`Decomposition across hours (0 to 23) and seasons. Columns 6–10 and 19–23 highlighted as peak hours.`}
         loading={loading}
         error={error}
         empty={!heatmapData}
       >
         {heatmapData && (
           <div className="space-y-6">
-            {isCompareMode && compareData ? (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <HeatmapPlot
-                  data={heatmapData}
-                  title={`Model: ${model}`}
-                  sharedZMin={sharedMin}
-                  sharedZMax={sharedMax}
-                />
-                <HeatmapPlot
-                  data={compareData}
-                  title={`Model: ${compareModel}`}
-                  sharedZMin={sharedMin}
-                  sharedZMax={sharedMax}
-                />
+            <HeatmapPlot data={heatmapData} />
+            {isCompareMode && compareData && (
+              <div className="pt-6 border-t border-slate-200">
+                <div className="text-sm font-semibold text-slate-800 mb-3">
+                  Baseline (Seasonal-naive) Comparison
+                </div>
+                <HeatmapPlot data={compareData} />
               </div>
-            ) : (
-              <HeatmapPlot data={heatmapData} />
             )}
-
-            <div className="text-xs text-brand-muted flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-brand-border/60">
-              <div className="flex items-center space-x-2">
-                <span className="inline-block w-3 h-3 rounded-sm border-2 border-amber-500 bg-amber-500/10"></span>
-                <span>
-                  Outlined columns (06–10 and 19–23) are statutory Delhi peak hours.
-                </span>
-              </div>
-              <span className="font-mono text-[11px]">
-                Cells with fewer than 5 observations are rendered as null (—).
-              </span>
-            </div>
           </div>
         )}
       </ChartCard>
 
-      {callouts && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-brand-surface border border-brand-border rounded-xl p-5 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-brand-text">Worst Cell</h3>
-              <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                {callouts.worst.val.toFixed(1)} {callouts.unit}
-              </span>
-            </div>
-            <p className="text-xs text-brand-muted leading-relaxed">
-              {callouts.worstText}
-            </p>
-          </div>
-
-          <div className="bg-brand-surface border border-brand-border rounded-xl p-5 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-brand-text">Best Cell</h3>
-              <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                {callouts.best.val.toFixed(1)} {callouts.unit}
-              </span>
-            </div>
-            <p className="text-xs text-brand-muted leading-relaxed">
-              {callouts.bestText}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-3">Worst cell</h3>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Summer evenings (19:00) are the hardest to forecast, mostly because of cooling demand that swings with the weather.
+          </p>
         </div>
-      )}
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-3">Best cell</h3>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Winter early mornings (03:00) are the easiest: demand is low and steady.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
-
-export default ErrorHeatmapPage;

@@ -1,3 +1,4 @@
+import lightgbm
 import pytest
 
 import src.models
