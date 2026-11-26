@@ -1,5 +1,7 @@
 # PeakWise: Delhi Electricity-Demand Forecasting & Procurement System
 
+> Built for the **CodeSpark** hackathon.
+
 Probabilistic 7-day-ahead hourly electricity demand forecasting, peak-event classification, and procurement copilot for Delhi.
 
 ## Architecture
